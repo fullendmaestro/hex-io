@@ -1,0 +1,5 @@
+{
+  "extends": "@hexio/typescript-config/base.json"
+}
+
+
