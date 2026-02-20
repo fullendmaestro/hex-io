@@ -22,5 +22,10 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "overrides": {
+    "@types/react": "19.2.10",
+    "@types/react-dom": "19.2.3",
+    "csstype": "3.2.3"
+  }
 }
