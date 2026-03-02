@@ -26,6 +26,7 @@
         "@langchain/mongodb": "^1.1.0",
         "@langchain/openai": "^1.2.11",
         "@langchain/pinecone": "^1.0.1",
+        "@langchain/tavily": "^1.2.0",
         "@pinecone-database/pinecone": "^7.1.0",
         "dotenv": "^17.3.1",
         "langchain": "^1.2.28",
@@ -616,6 +617,8 @@
     "@langchain/openai": ["@langchain/openai@1.2.11", "", { "dependencies": { "js-tiktoken": "^1.0.12", "openai": "^6.24.0", "zod": "^3.25.76 || ^4" }, "peerDependencies": { "@langchain/core": "^1.1.29" } }, "sha512-//a3OcvHKuz9QXAn3QJjASdtSyyF1JmsZKVzuUa2uR2YLFAS+XMZYLfel9RaNdt8LWkwhSpCiVvegqUGRBU+uw=="],
 
     "@langchain/pinecone": ["@langchain/pinecone@1.0.1", "", { "dependencies": { "flat": "^5.0.2", "uuid": "^10.0.0" }, "peerDependencies": { "@langchain/core": "^1.0.0", "@pinecone-database/pinecone": "^5.0.2" } }, "sha512-iq/dmGg6RF+sMLyIhN5Z9eXgxQsr+vwj19B7HG4utR42mF2VM/yI7KJHnyL0n/LdXsovUi5F4fef8bF7ZlYFyA=="],
+
+    "@langchain/tavily": ["@langchain/tavily@1.2.0", "", { "dependencies": { "zod": "^3.25.76 || ^4" }, "peerDependencies": { "@langchain/core": "^1.0.0" } }, "sha512-aPLPgtw8+b/Rnr3H+X8H8z98T/Y7JuCE4B5eqRDHoEWgZvMDUFF7divqwQqCTMq2deQttlVrm5bN5JbKaAR7/w=="],
 
     "@langchain/textsplitters": ["@langchain/textsplitters@1.0.1", "", { "dependencies": { "js-tiktoken": "^1.0.12" }, "peerDependencies": { "@langchain/core": "^1.0.0" } }, "sha512-rheJlB01iVtrOUzttscutRgLybPH9qR79EyzBEbf1u97ljWyuxQfCwIWK+SjoQTM9O8M7GGLLRBSYE26Jmcoww=="],
 
@@ -2738,6 +2741,8 @@
     "@langchain/openai/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
     "@langchain/pinecone/uuid": ["uuid@10.0.0", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ=="],
+
+    "@langchain/tavily/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
     "@reduxjs/toolkit/immer": ["immer@11.1.4", "", {}, "sha512-XREFCPo6ksxVzP4E0ekD5aMdf8WMwmdNaz6vuvxgI40UaEiu6q3p8X52aU6GdyvLY3XXX/8R7JOTXStz/nBbRw=="],
 

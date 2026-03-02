@@ -3,6 +3,9 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bunx @langchain/langgraph-cli dev --port 2024 --config ./langgraph.json"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.4",
     "@eslint/js": "^10.0.1",
@@ -43,6 +46,7 @@
     "@langchain/mongodb": "^1.1.0",
     "@langchain/openai": "^1.2.11",
     "@langchain/pinecone": "^1.0.1",
+    "@langchain/tavily": "^1.2.0",
     "@pinecone-database/pinecone": "^7.1.0",
     "dotenv": "^17.3.1",
     "langchain": "^1.2.28",
