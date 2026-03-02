@@ -207,7 +207,7 @@ const defaultComponents: any = {
     const match = /language-(\w+)/.exec(className || "");
 
     if (match) {
-      const language = match[1];
+      const language = match[1] || "text";
       const code = String(children).replace(/\n$/, "");
 
       return (

@@ -8,10 +8,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@hexio/ui/components/tooltip";
-import { Button, ButtonProps } from "@hexio/ui/components/button";
+import { Button } from "@hexio/ui/components/button";
 import { cn } from "@hexio/ui/lib/utils";
+import React from "react";
 
-export type TooltipIconButtonProps = ButtonProps & {
+export type TooltipIconButtonProps = React.ComponentProps<typeof Button> & {
   tooltip: string;
   side?: "top" | "bottom" | "left" | "right";
 };

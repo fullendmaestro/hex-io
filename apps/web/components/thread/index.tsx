@@ -149,7 +149,7 @@ export function Thread() {
     if (
       messages.length !== prevMessageLength.current &&
       messages?.length &&
-      messages[messages.length - 1].type === "ai"
+      messages[messages.length - 1]?.type === "ai"
     ) {
       setFirstTokenReceived(true);
     }

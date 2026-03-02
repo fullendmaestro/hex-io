@@ -47,7 +47,9 @@ export function ThreadIdCopyable({
 
   return (
     <TooltipIconButton
-      onClick={(e) => handleCopy(e)}
+      onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) =>
+        handleCopy(e)
+      }
       variant="ghost"
       tooltip="Copy thread ID"
       className="flex flex-grow-0 gap-1 items-center p-1 rounded-md border-[1px] cursor-pointer hover:bg-gray-50/90 border-gray-200 w-fit"

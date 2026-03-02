@@ -352,7 +352,7 @@ export function InboxItemInput({
       if (Array.isArray(change) && Array.isArray(key)) {
         // Handle array inputs by mapping corresponding values
         change.forEach((value, index) => {
-          if (index < key.length) {
+          if (index < key.length && key[index] !== undefined) {
             updatedArgs[key[index]] = value;
           }
         });

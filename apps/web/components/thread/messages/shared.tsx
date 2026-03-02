@@ -31,7 +31,9 @@ function ContentCopyable({
 
   return (
     <TooltipIconButton
-      onClick={(e) => handleCopy(e)}
+      onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) =>
+        handleCopy(e)
+      }
       variant="ghost"
       tooltip="Copy content"
       disabled={disabled}
