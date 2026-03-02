@@ -1,16 +1,20 @@
-import { Button } from "@hexio/ui/components/button"
+"use client";
+
+import { Thread } from "@/components/thread";
+import { StreamProvider } from "@/providers/Stream";
+import { ThreadProvider } from "@/providers/Thread";
+import { Toaster } from "@hexio/ui/components/sonner";
+import React from "react";
 
 export default function Page() {
   return (
-    <div className="flex items-center justify-center min-h-svh">
-      <div className="flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-bold">Hello World</h1>
-        <div className="flex gap-2">
-          <Button>Button</Button>
-          <Button variant="outline">Outline</Button>
-        </div>
-      </div>
-    </div>
-  )
+    <React.Suspense fallback={<div>Loading (layout)...</div>}>
+      <Toaster />
+      <ThreadProvider>
+        <StreamProvider>
+          <Thread />
+        </StreamProvider>
+      </ThreadProvider>
+    </React.Suspense>
+  );
 }
-
