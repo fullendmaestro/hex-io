@@ -16,13 +16,13 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
   useSidebar,
 } from "@hexio/ui/components/sidebar";
-import { PanelLeftClose, SquarePen, Search, ChevronDown } from "lucide-react";
+import { PanelLeftClose, SquarePen, Search } from "lucide-react";
 import { ThreadItem } from "./thread-item";
+import { UserNav } from "./user-nav";
 
 function ThreadHistoryLoading() {
   return (
@@ -142,25 +142,7 @@ export default function ThreadHistory() {
       <SidebarFooter className="flex flex-col gap-2 p-4 border-t border-border/10">
         <SidebarMenu className="flex w-full min-w-0 flex-col gap-1">
           <SidebarMenuItem className="group/menu-item relative">
-            <SidebarMenuButton
-              size="lg"
-              className="flex items-center gap-2 overflow-hidden p-2 text-left h-12 w-full px-4 bg-transparent border border-transparent hover:bg-muted/30 transition-all duration-200 rounded-xl group-data-[collapsible=icon]:!p-2"
-            >
-              <div className="flex w-full items-center justify-start gap-3">
-                <div className="rounded-full shadow-sm bg-gradient-to-br from-primary/30 to-primary/60 flex items-center justify-center transition-all duration-200 w-8 h-8 border-2 border-border/30 shrink-0">
-                  <span className="text-xs font-bold text-white">L</span>
-                </div>
-                <div className="block flex-1 text-left min-w-0">
-                  <div className="text-sm font-medium text-foreground truncate">
-                    User
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    user@example.com
-                  </div>
-                </div>
-                <ChevronDown className="lucide lucide-chevron-down block h-4 w-4 text-muted-foreground transition-transform duration-200" />
-              </div>
-            </SidebarMenuButton>
+            <UserNav />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
