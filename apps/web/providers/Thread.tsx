@@ -1,7 +1,11 @@
 import { validate } from "uuid";
 import { getApiKey } from "@/lib/api-key";
 import { Thread } from "@langchain/langgraph-sdk";
-import { useQueryState } from "nuqs";
+import { useAppSelector } from "@/lib/store/hooks";
+import {
+  selectApiUrl,
+  selectAssistantId,
+} from "@/lib/store/features/config/configSlice";
 import {
   createContext,
   useContext,
@@ -34,8 +38,8 @@ function getThreadSearchMetadata(
 }
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
-  const [apiUrl] = useQueryState("apiUrl");
-  const [assistantId] = useQueryState("assistantId");
+  const apiUrl = useAppSelector(selectApiUrl);
+  const assistantId = useAppSelector(selectAssistantId);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
 

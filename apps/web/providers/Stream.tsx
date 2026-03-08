@@ -12,14 +12,26 @@ import {
   type UIMessage,
   type RemoveUIMessage,
 } from "@langchain/langgraph-sdk/react-ui";
-import { useQueryState } from "nuqs";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import {
+  selectApiUrl,
+  selectAssistantId,
+  selectApiKey,
+  setApiUrl,
+  setAssistantId,
+  setApiKey,
+} from "@/lib/store/features/config/configSlice";
+import {
+  selectThreadId,
+  setThreadId,
+} from "@/lib/store/features/thread/threadSlice";
 import { Input } from "@hexio/ui/components/input";
 import { Button } from "@hexio/ui/components/button";
 import { LangGraphLogoSVG } from "@/components/icons/langgraph";
 import { Label } from "@hexio/ui/components/label";
 import { ArrowRight } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
-import { getApiKey } from "@/lib/api-key";
+import { getApiKey as getStoredApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 
@@ -74,13 +86,15 @@ const StreamSession = ({
   apiUrl: string;
   assistantId: string;
 }) => {
-  const [threadId, setThreadId] = useQueryState("threadId");
+  const dispatch = useAppDispatch();
+  const threadId = useAppSelector(selectThreadId);
   const { getThreads, setThreads } = useThreads();
   const streamValue = useTypedStream({
     apiUrl,
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
+    fetchStateHistory: true,
     onCustomEvent: (event, options) => {
       options.mutate((prev) => {
         const ui = uiMessageReducer(prev.ui ?? [], event);
@@ -88,7 +102,7 @@ const StreamSession = ({
       });
     },
     onThreadId: (id) => {
-      setThreadId(id);
+      dispatch(setThreadId(id));
       // Refetch threads list when thread ID changes.
       // Wait for some seconds before fetching so we're able to get the new thread that was created.
       sleep().then(() => getThreads().then(setThreads).catch(console.error));
@@ -127,38 +141,27 @@ const DEFAULT_ASSISTANT_ID = "agent";
 export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  // Get environment variables
-  const envApiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL;
-  const envAssistantId: string | undefined =
-    process.env.NEXT_PUBLIC_ASSISTANT_ID;
-  const envApiKey: string | undefined =
-    process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
+  const dispatch = useAppDispatch();
 
-  // Use URL params with env var fallbacks
-  const [apiUrl, setApiUrl] = useQueryState("apiUrl", {
-    defaultValue: envApiUrl || "",
-  });
-  const [assistantId, setAssistantId] = useQueryState("assistantId", {
-    defaultValue: envAssistantId || "",
-  });
+  // Get state from Redux
+  const apiUrl = useAppSelector(selectApiUrl);
+  const assistantId = useAppSelector(selectAssistantId);
+  const reduxApiKey = useAppSelector(selectApiKey);
 
-  // For API key, use localStorage with env var fallback
+  // For API key, also check localStorage for backwards compatibility
   const [apiKey, _setApiKey] = useState(() => {
-    const storedKey = getApiKey();
-    return storedKey || envApiKey || "";
+    const storedKey = getStoredApiKey();
+    return storedKey || reduxApiKey || "";
   });
 
-  const setApiKey = (key: string) => {
+  const handleSetApiKey = (key: string) => {
     window.localStorage.setItem("lg:chat:apiKey", key);
     _setApiKey(key);
+    dispatch(setApiKey(key));
   };
 
-  // Determine final values to use, prioritizing URL params then env vars
-  const finalApiUrl = apiUrl || envApiUrl;
-  const finalAssistantId = assistantId || envAssistantId;
-
   // If we're missing any required values, show the form
-  if (!finalApiUrl || !finalAssistantId) {
+  if (!apiUrl || !assistantId) {
     return (
       <div className="flex items-center justify-center min-h-screen w-full p-4">
         <div className="animate-in fade-in-0 zoom-in-95 flex flex-col border bg-background shadow-lg rounded-lg max-w-3xl">
@@ -180,13 +183,13 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
 
               const form = e.target as HTMLFormElement;
               const formData = new FormData(form);
-              const apiUrl = formData.get("apiUrl") as string;
-              const assistantId = formData.get("assistantId") as string;
-              const apiKey = formData.get("apiKey") as string;
+              const newApiUrl = formData.get("apiUrl") as string;
+              const newAssistantId = formData.get("assistantId") as string;
+              const newApiKey = formData.get("apiKey") as string;
 
-              setApiUrl(apiUrl);
-              setApiKey(apiKey);
-              setAssistantId(assistantId);
+              dispatch(setApiUrl(newApiUrl));
+              handleSetApiKey(newApiKey);
+              dispatch(setAssistantId(newAssistantId));
 
               form.reset();
             }}

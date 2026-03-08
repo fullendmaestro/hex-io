@@ -4,7 +4,15 @@ import { Thread } from "@langchain/langgraph-sdk";
 import { useEffect } from "react";
 
 import { getContentString } from "../utils";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import {
+  selectThreadId,
+  setThreadId,
+} from "@/lib/store/features/thread/threadSlice";
+import {
+  selectChatHistoryOpen,
+  setChatHistoryOpen,
+} from "@/lib/store/features/ui/uiSlice";
 import {
   Sheet,
   SheetContent,
@@ -22,7 +30,8 @@ function ThreadList({
   threads: Thread[];
   onThreadClick?: (threadId: string) => void;
 }) {
-  const [threadId, setThreadId] = useQueryState("threadId");
+  const dispatch = useAppDispatch();
+  const threadId = useAppSelector(selectThreadId);
 
   return (
     <div className="h-full flex flex-col w-full gap-2 items-start justify-start overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent">
@@ -47,7 +56,7 @@ function ThreadList({
                 e.preventDefault();
                 onThreadClick?.(t.thread_id);
                 if (t.thread_id === threadId) return;
-                setThreadId(t.thread_id);
+                dispatch(setThreadId(t.thread_id));
               }}
             >
               <p className="truncate text-ellipsis">{itemText}</p>
@@ -70,11 +79,9 @@ function ThreadHistoryLoading() {
 }
 
 export default function ThreadHistory() {
+  const dispatch = useAppDispatch();
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
-  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
-    "chatHistoryOpen",
-    parseAsBoolean.withDefault(false),
-  );
+  const chatHistoryOpen = useAppSelector(selectChatHistoryOpen);
 
   const { getThreads, threads, setThreads, threadsLoading, setThreadsLoading } =
     useThreads();
@@ -95,7 +102,7 @@ export default function ThreadHistory() {
           <Button
             className="hover:bg-gray-100"
             variant="ghost"
-            onClick={() => setChatHistoryOpen((p) => !p)}
+            onClick={() => dispatch(setChatHistoryOpen(!chatHistoryOpen))}
           >
             {chatHistoryOpen ? (
               <PanelRightOpen className="size-5" />
@@ -118,7 +125,7 @@ export default function ThreadHistory() {
           open={!!chatHistoryOpen && !isLargeScreen}
           onOpenChange={(open) => {
             if (isLargeScreen) return;
-            setChatHistoryOpen(open);
+            dispatch(setChatHistoryOpen(open));
           }}
         >
           <SheetContent side="left" className="lg:hidden flex">
@@ -127,7 +134,9 @@ export default function ThreadHistory() {
             </SheetHeader>
             <ThreadList
               threads={threads}
-              onThreadClick={() => setChatHistoryOpen((o) => !o)}
+              onThreadClick={() =>
+                dispatch(setChatHistoryOpen(!chatHistoryOpen))
+              }
             />
           </SheetContent>
         </Sheet>

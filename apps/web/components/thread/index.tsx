@@ -21,7 +21,17 @@ import {
   PanelRightClose,
   SquarePen,
 } from "lucide-react";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import {
+  selectThreadId,
+  setThreadId,
+} from "@/lib/store/features/thread/threadSlice";
+import {
+  selectChatHistoryOpen,
+  selectHideToolCalls,
+  setChatHistoryOpen,
+  setHideToolCalls,
+} from "@/lib/store/features/ui/uiSlice";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import ThreadHistory from "./history";
 import { toast } from "sonner";
@@ -96,15 +106,11 @@ function OpenGitHubRepo() {
 }
 
 export function Thread() {
-  const [threadId, setThreadId] = useQueryState("threadId");
-  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
-    "chatHistoryOpen",
-    parseAsBoolean.withDefault(false),
-  );
-  const [hideToolCalls, setHideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
+  const dispatch = useAppDispatch();
+  const threadId = useAppSelector(selectThreadId);
+  const chatHistoryOpen = useAppSelector(selectChatHistoryOpen);
+  const hideToolCalls = useAppSelector(selectHideToolCalls);
+
   const [input, setInput] = useState("");
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
@@ -254,7 +260,7 @@ export function Thread() {
                 <Button
                   className="hover:bg-gray-100"
                   variant="ghost"
-                  onClick={() => setChatHistoryOpen((p) => !p)}
+                  onClick={() => dispatch(setChatHistoryOpen(!chatHistoryOpen))}
                 >
                   {chatHistoryOpen ? (
                     <PanelRightOpen className="size-5" />
@@ -277,7 +283,9 @@ export function Thread() {
                   <Button
                     className="hover:bg-gray-100"
                     variant="ghost"
-                    onClick={() => setChatHistoryOpen((p) => !p)}
+                    onClick={() =>
+                      dispatch(setChatHistoryOpen(!chatHistoryOpen))
+                    }
                   >
                     {chatHistoryOpen ? (
                       <PanelRightOpen className="size-5" />
@@ -289,7 +297,7 @@ export function Thread() {
               </div>
               <motion.button
                 className="flex gap-2 items-center cursor-pointer"
-                onClick={() => setThreadId(null)}
+                onClick={() => dispatch(setThreadId(null))}
                 animate={{
                   marginLeft: !chatHistoryOpen ? 48 : 0,
                 }}
@@ -315,7 +323,7 @@ export function Thread() {
                 className="p-4"
                 tooltip="New thread"
                 variant="ghost"
-                onClick={() => setThreadId(null)}
+                onClick={() => dispatch(setThreadId(null))}
               >
                 <SquarePen className="size-5" />
               </TooltipIconButton>
@@ -412,7 +420,9 @@ export function Thread() {
                           <Switch
                             id="render-tool-calls"
                             checked={hideToolCalls ?? false}
-                            onCheckedChange={setHideToolCalls}
+                            onCheckedChange={(checked) =>
+                              dispatch(setHideToolCalls(checked))
+                            }
                           />
                           <Label
                             htmlFor="render-tool-calls"

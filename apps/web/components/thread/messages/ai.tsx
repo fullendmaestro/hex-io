@@ -11,7 +11,8 @@ import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import { ThreadView } from "../agent-inbox";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { useAppSelector } from "@/lib/store/hooks";
+import { selectHideToolCalls } from "@/lib/store/features/ui/uiSlice";
 import { GenericInterruptView } from "./generic-interrupt";
 
 function CustomComponent({
@@ -76,10 +77,7 @@ export function AssistantMessage({
 }) {
   const content = message?.content ?? [];
   const contentString = getContentString(content);
-  const [hideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
+  const hideToolCalls = useAppSelector(selectHideToolCalls);
 
   const thread = useStreamContext();
   const isLastMessage =
