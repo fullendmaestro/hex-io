@@ -35,7 +35,11 @@ import { getApiKey as getStoredApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 
-export type StateType = { messages: Message[]; ui?: UIMessage[] };
+export type StateType = {
+  messages: Message[];
+  ui?: UIMessage[];
+  walletAccountId?: string;
+};
 
 const useTypedStream = useStream<
   StateType,
@@ -43,6 +47,7 @@ const useTypedStream = useStream<
     UpdateType: {
       messages?: Message[] | Message | string;
       ui?: (UIMessage | RemoveUIMessage)[] | UIMessage | RemoveUIMessage;
+      walletAccountId?: string;
     };
     CustomEventType: UIMessage | RemoveUIMessage;
   }

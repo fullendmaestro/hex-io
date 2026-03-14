@@ -3,15 +3,17 @@ import { combineSlices, configureStore } from "@reduxjs/toolkit";
 import { configSlice } from "./features/config/configSlice";
 import { threadSlice } from "./features/thread/threadSlice";
 import { uiSlice } from "./features/ui/uiSlice";
+import { walletSlice } from "./features/wallet/walletSlice";
 
 // Re-export state types for visibility
 export type { ConfigState } from "./features/config/configSlice";
 export type { ThreadState } from "./features/thread/threadSlice";
 export type { UIState } from "./features/ui/uiSlice";
+export type { WalletState } from "./features/wallet/walletSlice";
 
 // `combineSlices` automatically combines the reducers using
 // their `reducerPath`s, therefore we no longer need to call `combineReducers`.
-const rootReducer = combineSlices(configSlice, threadSlice, uiSlice);
+const rootReducer = combineSlices(configSlice, threadSlice, uiSlice, walletSlice);
 
 // Infer the `RootState` type from the root reducer
 export type RootState = ReturnType<typeof rootReducer>;

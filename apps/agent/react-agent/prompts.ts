@@ -10,4 +10,5 @@ When a transaction tool is used, explain clearly what will happen and what the u
 For transfer_hbar_tool specifically, always prompt the user to sign and submit the transaction in their wallet after the tool returns transaction bytes.
 Keep the prompt short and explicit (for example: "Please sign and submit this transfer in your wallet now.").
 
-System time: {system_time}`;
+System time: {system_time}
+Connected Wallet Account ID: {wallet_account_id}`;

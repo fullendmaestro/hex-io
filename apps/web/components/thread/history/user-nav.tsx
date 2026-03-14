@@ -35,6 +35,11 @@ import {
   disconnectAllSessions,
   getPairedAccountId,
 } from "@/lib/wallet/walletconnect";
+import { useAppDispatch } from "@/lib/store/hooks";
+import {
+  setWalletAccountId,
+  clearWalletAccountId,
+} from "@/lib/store/features/wallet/walletSlice";
 
 // Mock user data - replace with actual user data later
 const MOCK_USER = {
@@ -48,6 +53,7 @@ export function UserNav() {
   const [connected, setConnected] = useState(false);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     (async () => {
@@ -61,6 +67,7 @@ export function UserNav() {
           try {
             const acct = await getPairedAccountId();
             setAccountId(acct);
+            dispatch(setWalletAccountId(acct));
           } catch {
             // ignore if cannot derive
           }
@@ -75,8 +82,10 @@ export function UserNav() {
           try {
             const acct = await getPairedAccountId();
             setAccountId(acct);
+            dispatch(setWalletAccountId(acct));
           } catch {
             setAccountId(null);
+            dispatch(clearWalletAccountId());
           }
         });
         (
@@ -86,6 +95,7 @@ export function UserNav() {
         ).walletConnectClient?.on("session_delete", () => {
           setConnected(false);
           setAccountId(null);
+          dispatch(clearWalletAccountId());
         });
       } catch {
         // ignore on load
@@ -101,8 +111,10 @@ export function UserNav() {
       try {
         const acct = await getPairedAccountId();
         setAccountId(acct);
+        dispatch(setWalletAccountId(acct));
       } catch {
         setAccountId(null);
+        dispatch(clearWalletAccountId());
       }
     } catch (e) {
       console.error("Failed to connect wallet:", e);
@@ -117,6 +129,7 @@ export function UserNav() {
       await disconnectAllSessions();
       setConnected(false);
       setAccountId(null);
+      dispatch(clearWalletAccountId());
     } catch (e) {
       console.error("Failed to disconnect wallet:", e);
     } finally {

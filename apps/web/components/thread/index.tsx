@@ -23,6 +23,7 @@ import {
   selectHideToolCalls,
   setHideToolCalls,
 } from "@/lib/store/features/ui/uiSlice";
+import { selectWalletAccountId } from "@/lib/store/features/wallet/walletSlice";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import ThreadHistory from "./history";
 import { toast } from "sonner";
@@ -158,6 +159,7 @@ export function Thread() {
   const dispatch = useAppDispatch();
   const threadId = useAppSelector(selectThreadId);
   const hideToolCalls = useAppSelector(selectHideToolCalls);
+  const walletAccountId = useAppSelector(selectWalletAccountId);
 
   const [input, setInput] = useState("");
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
@@ -223,7 +225,10 @@ export function Thread() {
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
     stream.submit(
-      { messages: [...toolMessages, newHumanMessage] },
+      {
+        messages: [...toolMessages, newHumanMessage],
+        walletAccountId: walletAccountId || "",
+      },
       {
         streamMode: ["values"],
         optimisticValues: (prev) => ({

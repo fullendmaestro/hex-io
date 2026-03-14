@@ -9,6 +9,11 @@ import {
 } from "@/lib/wallet/walletconnect";
 import { Button } from "@hexio/ui/components/button";
 import { Badge } from "@hexio/ui/components/badge";
+import { useAppDispatch } from "@/lib/store/hooks";
+import {
+  setWalletAccountId,
+  clearWalletAccountId,
+} from "@/lib/store/features/wallet/walletSlice";
 
 type Variant = "panel" | "compact";
 
@@ -21,6 +26,7 @@ export default function WalletConnectPanel({
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     (async () => {
@@ -34,6 +40,7 @@ export default function WalletConnectPanel({
           try {
             const acct = await getPairedAccountId();
             setAccountId(acct);
+            dispatch(setWalletAccountId(acct));
           } catch {
             // ignore if cannot derive
           }
@@ -48,8 +55,10 @@ export default function WalletConnectPanel({
           try {
             const acct = await getPairedAccountId();
             setAccountId(acct);
+            dispatch(setWalletAccountId(acct));
           } catch {
             setAccountId(null);
+            dispatch(clearWalletAccountId());
           }
         });
         (
@@ -59,6 +68,7 @@ export default function WalletConnectPanel({
         ).walletConnectClient?.on("session_delete", () => {
           setConnected(false);
           setAccountId(null);
+          dispatch(clearWalletAccountId());
         });
       } catch {
         // ignore on load
@@ -75,8 +85,10 @@ export default function WalletConnectPanel({
       try {
         const acct = await getPairedAccountId();
         setAccountId(acct);
+        dispatch(setWalletAccountId(acct));
       } catch {
         setAccountId(null);
+        dispatch(clearWalletAccountId());
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -92,6 +104,7 @@ export default function WalletConnectPanel({
       await disconnectAllSessions();
       setConnected(false);
       setAccountId(null);
+      dispatch(clearWalletAccountId());
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
