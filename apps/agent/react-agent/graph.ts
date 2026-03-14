@@ -7,23 +7,28 @@ import { ConfigurationSchema, ensureConfiguration } from "./configuration.js";
 import { TOOLS } from "./tools.js";
 import { loadChatModel } from "./utils.js";
 
+const BOUND_TOOLS = TOOLS as any;
+const TOOLS_NODE = new ToolNode(BOUND_TOOLS) as any;
+
 // Define the function that calls the model
 async function callModel(
   state: typeof MessagesAnnotation.State,
-  config: RunnableConfig
+  config: RunnableConfig,
 ): Promise<typeof MessagesAnnotation.Update> {
   /** Call the LLM powering our agent. **/
   const configuration = ensureConfiguration(config);
 
   // Feel free to customize the prompt, model, and other logic!
-  const model = (await loadChatModel(configuration.model)).bindTools(TOOLS);
+  const model = (await loadChatModel(configuration.model)).bindTools(
+    BOUND_TOOLS,
+  );
 
   const response = await model.invoke([
     {
       role: "system",
       content: configuration.systemPromptTemplate.replace(
         "{system_time}",
-        new Date().toISOString()
+        new Date().toISOString(),
       ),
     },
     ...state.messages,
@@ -51,8 +56,8 @@ function routeModelOutput(state: typeof MessagesAnnotation.State): string {
 // https://langchain-ai.github.io/langgraphjs/concepts/low_level/#messagesannotation
 const workflow = new StateGraph(MessagesAnnotation, ConfigurationSchema)
   // Define the two nodes we will cycle between
-  .addNode("callModel", callModel)
-  .addNode("tools", new ToolNode(TOOLS))
+  .addNode("callModel", callModel as any)
+  .addNode("tools", TOOLS_NODE)
   // Set the entrypoint as `callModel`
   // This means that this node is the first one called
   .addEdge("__start__", "callModel")
@@ -62,7 +67,7 @@ const workflow = new StateGraph(MessagesAnnotation, ConfigurationSchema)
     "callModel",
     // Next, we pass in the function that will determine the sink node(s), which
     // will be called after the source node is called.
-    routeModelOutput
+    routeModelOutput,
   )
   // This means that after `tools` is called, `callModel` node is called next.
   .addEdge("tools", "callModel");

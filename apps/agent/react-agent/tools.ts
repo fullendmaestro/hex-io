@@ -1,23 +1,39 @@
-/**
- * This file defines the tools available to the ReAct agent.
- * Tools are functions that the agent can use to interact with external systems or perform specific tasks.
- */
-import { TavilySearch } from "@langchain/tavily";
+import { AccountId, Client } from "@hashgraph/sdk";
+import {
+  AgentMode,
+  HederaLangchainToolkit,
+  type Context,
+} from "hedera-agent-kit";
 
-/**
- * Tavily search tool configuration
- * This tool allows the agent to perform web searches using the Tavily API.
- */
-const searchTavily = new TavilySearch({
-  maxResults: 3,
+type HederaNetwork = "mainnet" | "testnet";
+
+function getHederaNetwork(): HederaNetwork {
+  return process.env.HEDERA_NETWORK === "mainnet" ? "mainnet" : "testnet";
+}
+
+function createHederaClient(network: HederaNetwork): Client {
+  return network === "mainnet" ? Client.forMainnet() : Client.forTestnet();
+}
+
+function createToolkitContext(): Context {
+  const context: Context = {
+    mode: AgentMode.RETURN_BYTES,
+  };
+
+  const configuredAccountId = process.env.ACCOUNT_ID;
+  if (configuredAccountId) {
+    context.accountId = AccountId.fromString(configuredAccountId).toString();
+  }
+
+  return context;
+}
+
+const hederaToolkit = new HederaLangchainToolkit({
+  client: createHederaClient(getHederaNetwork()),
+  configuration: {
+    context: createToolkitContext(),
+    plugins: [],
+  },
 });
 
-/**
- * Export an array of all available tools
- * Add new tools to this array to make them available to the agent
- *
- * Note: You can create custom tools by implementing the Tool interface from @langchain/core/tools
- * and add them to this array.
- * See https://js.langchain.com/docs/how_to/custom_tools/#tool-function for more information.
- */
-export const TOOLS = [searchTavily];
+export const TOOLS: any[] = hederaToolkit.getTools() as any[];

@@ -140,22 +140,6 @@ export async function getPairedAccountId(): Promise<string> {
   return accountId;
 }
 
-export async function signAndExecuteBytes(params: {
-  bytes: Uint8Array | ArrayBuffer;
-  accountId: string;
-}) {
-  const c = await ensureWalletConnector();
-  const network = getNetwork();
-  const hip30 = toHip30AccountId(network, params.accountId);
-  const base64 = toBase64(params.bytes);
-  // WalletConnect v2 expects a single string for the transaction list (base64-encoded bytes list)
-  // Here we pass a single-transaction list encoded as a string
-  return c.signAndExecuteTransaction({
-    signerAccountId: hip30,
-    transactionList: base64,
-  });
-}
-
 export function toBase64(bytes: Uint8Array | ArrayBuffer): string {
   const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   if (typeof window === "undefined") {
@@ -174,4 +158,19 @@ export function fromBase64(base64: string): Uint8Array {
   const out = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
   return out;
+}
+
+export async function signAndExecuteBytes(params: {
+  bytes: Uint8Array | ArrayBuffer;
+  accountId: string;
+}) {
+  const c = await ensureWalletConnector();
+  const network = getNetwork();
+  const hip30 = toHip30AccountId(network, params.accountId);
+  const base64 = toBase64(params.bytes);
+
+  return c.signAndExecuteTransaction({
+    signerAccountId: hip30,
+    transactionList: base64,
+  });
 }

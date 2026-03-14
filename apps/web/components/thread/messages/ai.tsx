@@ -1,6 +1,6 @@
 import { parsePartialJson } from "@langchain/core/output_parsers";
 import { useStreamContext } from "@/providers/Stream";
-import { AIMessage, Checkpoint, Message } from "@langchain/langgraph-sdk";
+import { AIMessage, Checkpoint, Message, ToolMessage } from "@langchain/langgraph-sdk";
 import { getContentString } from "../utils";
 import { BranchSwitcher, CommandBar } from "./shared";
 import { MarkdownText } from "../markdown-text";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
+import { useMemo } from "react";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import { ThreadView } from "../agent-inbox";
 import { useAppSelector } from "@/lib/store/hooks";
@@ -66,6 +67,21 @@ function parseAnthropicStreamedToolCalls(
   });
 }
 
+/**
+ * Build a map from tool_call_id → ToolMessage for pairing tool calls with results.
+ */
+function buildToolResultsMap(
+  messages: Message[],
+): Record<string, ToolMessage> {
+  const map: Record<string, ToolMessage> = {};
+  for (const msg of messages) {
+    if (msg.type === "tool" && "tool_call_id" in msg && msg.tool_call_id) {
+      map[msg.tool_call_id as string] = msg as ToolMessage;
+    }
+  }
+  return map;
+}
+
 export function AssistantMessage({
   message,
   isLoading,
@@ -87,6 +103,12 @@ export function AssistantMessage({
   );
   const meta = message ? thread.getMessagesMetadata(message) : undefined;
   const threadInterrupt = thread.interrupt;
+
+  // Build tool results pairing map for unified rendering
+  const toolResultsMap = useMemo(
+    () => buildToolResultsMap(thread.messages),
+    [thread.messages],
+  );
 
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;
   const anthropicStreamedToolCalls = Array.isArray(content)
@@ -125,12 +147,12 @@ export function AssistantMessage({
           {!hideToolCalls && (
             <>
               {(hasToolCalls && toolCallsHaveContents && (
-                <ToolCalls toolCalls={message.tool_calls} />
+                <ToolCalls toolCalls={message.tool_calls} toolResults={toolResultsMap} />
               )) ||
                 (hasAnthropicToolCalls && (
-                  <ToolCalls toolCalls={anthropicStreamedToolCalls} />
+                  <ToolCalls toolCalls={anthropicStreamedToolCalls} toolResults={toolResultsMap} />
                 )) ||
-                (hasToolCalls && <ToolCalls toolCalls={message.tool_calls} />)}
+                (hasToolCalls && <ToolCalls toolCalls={message.tool_calls} toolResults={toolResultsMap} />)}
             </>
           )}
 
@@ -140,8 +162,8 @@ export function AssistantMessage({
               <ThreadView interrupt={threadInterrupt.value} />
             )}
           {threadInterrupt?.value &&
-          !isAgentInboxInterruptSchema(threadInterrupt.value) &&
-          isLastMessage ? (
+            !isAgentInboxInterruptSchema(threadInterrupt.value) &&
+            isLastMessage ? (
             <GenericInterruptView interrupt={threadInterrupt.value} />
           ) : null}
           <div
