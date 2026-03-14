@@ -6,6 +6,7 @@ import {
     Loader2,
     ExternalLink,
     ArrowRight,
+    XCircle,
 } from "lucide-react";
 import { Button } from "@hexio/ui/components/button";
 import { ToolCallRendererProps } from "./types";
@@ -16,6 +17,7 @@ import {
     getPairedAccountId,
     signAndExecuteBytes,
 } from "@/lib/wallet/walletconnect";
+import { useStreamContext } from "@/providers/Stream";
 
 /* ── Types ───────────────────────────────────────────────────────── */
 
@@ -62,6 +64,9 @@ export function TransferHbarToolCallRenderer({
     const sourceAccountId = args.sourceAccountId;
     const memo = args.transactionMemo;
 
+    const stream = useStreamContext();
+    const threadInterrupt = stream.interrupt;
+
     const totalAmount = useMemo(
         () => transfers.reduce((sum, t) => sum + (t.amount ?? 0), 0),
         [transfers],
@@ -69,6 +74,9 @@ export function TransferHbarToolCallRenderer({
 
     const hasResult = !!toolResult;
     const bytesBase64 = hasResult ? findBytesBase64(toolResult.content) : null;
+
+    // Determine if this tool call is currently interrupted (graph is paused after tool execution)
+    const isInterrupted = !!threadInterrupt && hasResult && !!bytesBase64;
 
     /* ── Signing state ───────────────────────────────────────────── */
     const [status, setStatus] = useState<
@@ -81,6 +89,33 @@ export function TransferHbarToolCallRenderer({
         () => pickSubmissionSummary(submittedResult),
         [submittedResult],
     );
+
+    /**
+     * Resume the graph with an updated tool result message.
+     * Uses Command({ update }) to replace the original tool result (bytes)
+     * with the signing outcome so the model sees "confirmed" or "rejected".
+     */
+    const resumeGraphWithResult = (content: string) => {
+        if (!toolResult?.id) return;
+        stream.submit(
+            {},
+            {
+                command: {
+                    update: {
+                        messages: [
+                            {
+                                type: "tool",
+                                tool_call_id: toolResult.tool_call_id,
+                                content,
+                                id: toolResult.id,
+                                name: toolCall.name,
+                            },
+                        ],
+                    },
+                },
+            },
+        );
+    };
 
     const handleSign = async () => {
         if (!bytesBase64) return;
@@ -104,10 +139,22 @@ export function TransferHbarToolCallRenderer({
 
             setSubmittedResult(result);
             setStatus("submitted");
+
+            // Resume graph with confirmation
+            const summary = pickSubmissionSummary(result);
+            const confirmationMessage = summary.transactionId
+                ? `Transaction confirmed and submitted to the network. Transaction ID: ${summary.transactionId}. Status: ${summary.status || "SUCCESS"}.`
+                : `Transaction confirmed and submitted to the network. Status: ${summary.status || "SUCCESS"}.`;
+            resumeGraphWithResult(confirmationMessage);
         } catch (error) {
             setStatus("error");
-            setErrorDetail(
-                error instanceof Error ? error.message : String(error),
+            const message =
+                error instanceof Error ? error.message : String(error);
+            setErrorDetail(message);
+
+            // Resume graph with rejection
+            resumeGraphWithResult(
+                `Transaction rejected by user. Reason: ${message}`,
             );
         }
     };
@@ -139,6 +186,23 @@ export function TransferHbarToolCallRenderer({
                         {submittedSummary.transactionId}
                         <ExternalLink className="w-3 h-3" />
                     </a>
+                )}
+            </div>
+        );
+    }
+
+    /* ── Error view (transaction rejected) ───────────────────────── */
+    if (status === "error") {
+        return (
+            <div className="max-w-sm space-y-2 py-1">
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                    <XCircle className="w-4 h-4" />
+                    <span className="font-medium">Transaction rejected</span>
+                </div>
+                {errorDetail && (
+                    <p className="text-xs text-muted-foreground break-all">
+                        {errorDetail}
+                    </p>
                 )}
             </div>
         );
@@ -203,7 +267,7 @@ export function TransferHbarToolCallRenderer({
                     </p>
                 )}
 
-                {hasResult && bytesBase64 && (
+                {isInterrupted && (
                     <Button
                         type="button"
                         size="sm"
@@ -222,10 +286,11 @@ export function TransferHbarToolCallRenderer({
                     </Button>
                 )}
 
-                {errorDetail && (
-                    <p className="text-xs text-destructive-foreground mt-2 break-all">
-                        {errorDetail}
-                    </p>
+                {hasResult && bytesBase64 && !isInterrupted && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        Transaction processed
+                    </div>
                 )}
             </div>
         </div>

@@ -7,6 +7,7 @@ import { MarkdownText } from "../markdown-text";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
 import { ToolCalls, ToolResult } from "./tool-calls";
+import { getToolUI } from "./tools/registry";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
 import { useMemo } from "react";
@@ -128,6 +129,14 @@ export function AssistantMessage({
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
 
+  // Check if any tool call on this message has a registered UI renderer.
+  // If so, the tool's own component handles the interrupt-resume flow,
+  // so we suppress the generic interrupt view.
+  const hasRegisteredToolUI = useMemo(() => {
+    const toolCalls = hasToolCalls ? message.tool_calls : anthropicStreamedToolCalls;
+    return toolCalls?.some((tc) => getToolUI(tc.name) !== null) ?? false;
+  }, [hasToolCalls, message, anthropicStreamedToolCalls]);
+
   if (isToolResult && hideToolCalls) {
     return null;
   }
@@ -163,6 +172,7 @@ export function AssistantMessage({
             )}
           {threadInterrupt?.value &&
             !isAgentInboxInterruptSchema(threadInterrupt.value) &&
+            !hasRegisteredToolUI &&
             isLastMessage ? (
             <GenericInterruptView interrupt={threadInterrupt.value} />
           ) : null}
