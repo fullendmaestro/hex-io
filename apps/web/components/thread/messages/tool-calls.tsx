@@ -15,6 +15,9 @@ export function ToolCalls({
     <div className="space-y-4 w-full max-w-4xl">
       {toolCalls.map((toolCall, idx) => {
         const ui = getToolUI(toolCall.name);
+        // Skip tool calls that have no registered UI component
+        if (!ui) return null;
+
         const pairedResult = toolCall.id
           ? toolResults?.[toolCall.id]
           : undefined;
@@ -32,10 +35,9 @@ export function ToolCalls({
 }
 
 export function ToolResult({ message }: { message: ToolMessage }) {
-  // If this tool has a unified renderer, skip standalone rendering —
-  // it's already rendered inside the paired ToolCall component.
   const ui = getToolUI(message.name);
-  if (ui.isUnified) return null;
+  // Skip tools with no registered UI or unified renderers
+  if (!ui || ui.isUnified) return null;
 
   const Renderer = ui.ToolResult;
   return <>{Renderer({ message })}</>;
