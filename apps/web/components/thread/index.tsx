@@ -13,7 +13,7 @@ import {
 } from "@/lib/ensure-tool-responses";
 import { LangGraphLogoSVG } from "../icons/langgraph";
 import { Avatar, AvatarFallback } from "@hexio/ui/components/avatar";
-import { ArrowDown, LoaderCircle, ChevronDown, SquarePen } from "lucide-react";
+import { ArrowDown, LoaderCircle, ChevronDown, SquarePen, Sparkles } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import {
   selectThreadId,
@@ -313,12 +313,17 @@ export function Thread() {
                 </>
               }
               footer={
-                <div className="sticky flex flex-col items-center gap-8 bottom-0 bg-white">
+                <div className="sticky flex flex-col w-full gap-8 bottom-0">
                   {!chatStarted && (
-                    <div className="flex gap-3 items-center">
-                      <LangGraphLogoSVG className="flex-shrink-0 h-8" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        Agent Chat
+                    <div className="flex flex-col items-start w-full max-w-3xl mx-auto px-4 md:px-0 mb-4">
+                      <div className="flex items-center gap-2 text-primary dark:text-gray-300">
+                        <Sparkles className="w-6 h-6 fill-current text-blue-500" />
+                        <span className="text-xl font-medium tracking-tight">
+                          Hello
+                        </span>
+                      </div>
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-foreground/90 mt-1">
+                        What would you like to do?
                       </h1>
                     </div>
                   )}
