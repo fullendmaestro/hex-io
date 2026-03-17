@@ -1,11 +1,8 @@
 "use client";
 
 import { LedgerId } from "@hashgraph/sdk";
-import {
+import type {
   DAppConnector,
-  HederaChainId,
-  HederaJsonRpcMethod,
-  HederaSessionEvent,
 } from "@hashgraph/hedera-wallet-connect";
 import { HederaNetwork } from "../agent-config";
 
@@ -17,7 +14,7 @@ export function mapNetworkToLedgerId(network: HederaNetwork): LedgerId {
 
 export function getAllowedChains(): string[] {
   // Allow both Hedera Native chain ids; wallets handle the selected session chain
-  return [HederaChainId.Mainnet, HederaChainId.Testnet];
+  return ["hedera:mainnet", "hedera:testnet"];
 }
 
 export function getNetwork(): HederaNetwork {
@@ -34,11 +31,15 @@ export function toHip30AccountId(
   return `${hip30Network}:${accountId}`;
 }
 
-export function initWalletConnector(): DAppConnector {
+export async function initWalletConnector(): Promise<DAppConnector | undefined> {
+  if (typeof window === "undefined") return undefined;
   if (connectorSingleton) return connectorSingleton;
 
   const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
   if (!projectId) throw new Error("NEXT_PUBLIC_WC_PROJECT_ID is required");
+
+  // Dynamically import the wallet connect module
+  const { DAppConnector, HederaChainId, HederaJsonRpcMethod, HederaSessionEvent } = await import("@hashgraph/hedera-wallet-connect");
 
   const network = getNetwork();
   const ledgerId = mapNetworkToLedgerId(network);
@@ -46,10 +47,7 @@ export function initWalletConnector(): DAppConnector {
   const metadata = {
     name: "Hedera Agent App",
     description: "HITL signing via Hedera WalletConnect",
-    url:
-      typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:3000",
+    url: window.location.origin,
     icons: ["https://avatars.githubusercontent.com/u/31002956"],
   };
 
@@ -59,7 +57,8 @@ export function initWalletConnector(): DAppConnector {
     projectId,
     Object.values(HederaJsonRpcMethod),
     [HederaSessionEvent.ChainChanged, HederaSessionEvent.AccountsChanged],
-    getAllowedChains(),
+    // Allow both Hedera Native chain ids; wallets handle the selected session chain
+    [HederaChainId.Mainnet, HederaChainId.Testnet]
   );
 
   return connectorSingleton;
@@ -68,7 +67,10 @@ export function initWalletConnector(): DAppConnector {
 export async function ensureWalletConnector(
   logger: "error" | "warn" | "info" = "warn",
 ) {
-  const c = initWalletConnector();
+  const c = await initWalletConnector();
+  if (!c) {
+    throw new Error("WalletConnect cannot be initialized on the server.");
+  }
   if (!c.walletConnectClient) {
     await c.init({ logger });
   }

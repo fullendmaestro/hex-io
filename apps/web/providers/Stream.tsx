@@ -34,6 +34,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey as getStoredApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
+import { useUser } from "@/lib/supabase/client";
 
 export type StateType = {
   messages: Message[];
@@ -94,25 +95,8 @@ const StreamSession = ({
   const dispatch = useAppDispatch();
   const threadId = useAppSelector(selectThreadId);
   const { getThreads, setThreads } = useThreads();
-  const streamValue = useTypedStream({
-    apiUrl,
-    apiKey: apiKey ?? undefined,
-    assistantId,
-    threadId: threadId ?? null,
-    fetchStateHistory: true,
-    onCustomEvent: (event, options) => {
-      options.mutate((prev) => {
-        const ui = uiMessageReducer(prev.ui ?? [], event);
-        return { ...prev, ui };
-      });
-    },
-    onThreadId: (id) => {
-      dispatch(setThreadId(id));
-      // Refetch threads list when thread ID changes.
-      // Wait for some seconds before fetching so we're able to get the new thread that was created.
-      sleep().then(() => getThreads().then(setThreads).catch(console.error));
-    },
-  });
+  const { session, loading: authLoading } = useUser();
+  const jwt = session?.access_token || undefined;
 
   useEffect(() => {
     checkGraphStatus(apiUrl, apiKey).then((ok) => {
@@ -131,6 +115,44 @@ const StreamSession = ({
       }
     });
   }, [apiKey, apiUrl]);
+
+  const streamValue = useTypedStream({
+    apiUrl,
+    apiKey: apiKey ?? undefined,
+    assistantId,
+    threadId: threadId ?? null,
+    fetchStateHistory: true,
+    defaultHeaders: jwt
+      ? {
+          Authorization: `Bearer ${jwt}`,
+          "x-supabase-access-token": jwt,
+        }
+      : undefined,
+    onCustomEvent: (event, options) => {
+      options.mutate((prev) => {
+        const ui = uiMessageReducer(prev.ui ?? [], event);
+        return { ...prev, ui };
+      });
+    },
+    onThreadId: (id) => {
+      dispatch(setThreadId(id));
+      // Refetch threads list when thread ID changes.
+      // Wait for some seconds before fetching so we're able to get the new thread that was created.
+      sleep().then(() => getThreads().then(setThreads).catch(console.error));
+    },
+  });
+
+  // Don't render children until auth is fully loaded
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <StreamContext.Provider value={streamValue}>

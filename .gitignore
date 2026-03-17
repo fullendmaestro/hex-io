@@ -36,3 +36,5 @@ npm-debug.log*
 *.pem
 
 hedera-agent-app
+
+agent-auth-payments

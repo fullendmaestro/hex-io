@@ -35,7 +35,8 @@ interface TransferHbarArgs {
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 
-function truncate(id: string): string {
+function truncate(id?: string | null): string {
+    if (!id) return "";
     if (id.length <= 12) return id;
     return `${id.slice(0, 6)}…${id.slice(-4)}`;
 }

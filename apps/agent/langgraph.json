@@ -4,5 +4,8 @@
   "graphs": {
     "agent": "./react-agent/graph.ts:graph"
   },
-  "env": ".env"
+  "env": ".env",
+  "auth": {
+    "path": "./react-agent/security/auth.ts:auth"
+  }
 }

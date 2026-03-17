@@ -16,6 +16,7 @@ import {
   SetStateAction,
 } from "react";
 import { createClient } from "./client";
+import { supabase } from "@/lib/supabase/client";
 
 interface ThreadContextType {
   getThreads: () => Promise<Thread[]>;
@@ -45,7 +46,12 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
     if (!apiUrl || !assistantId) return [];
-    const client = createClient(apiUrl, getApiKey() ?? undefined);
+    
+    // Get the JWT token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const jwt = session?.access_token;
+    
+    const client = createClient(apiUrl, getApiKey() ?? undefined, jwt);
 
     const threads = await client.threads.search({
       metadata: {
