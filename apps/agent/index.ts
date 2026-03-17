@@ -21,6 +21,22 @@ const PUBLIC_PATHS = new Set(["/info"]);
 
 let langgraphProcess: ReturnType<typeof spawn> | null = null;
 
+const buildLangGraphLaunchCommands = () => {
+  return [
+    { command: "bun", args: ["run", "dev:langgraph:internal"] },
+    {
+      command: "langgraphjs",
+      args: [
+        "dev",
+        "--port",
+        String(INTERNAL_LANGGRAPH_PORT),
+        "--config",
+        "./langgraph.json",
+      ],
+    },
+  ];
+};
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
@@ -124,21 +140,30 @@ const startLangGraphServer = () => {
     return;
   }
 
-  langgraphProcess = spawn(
-    "bunx",
-    [
-      "langgraphjs",
-      "dev",
-      "--port",
-      String(INTERNAL_LANGGRAPH_PORT),
-      "--config",
-      "./langgraph.json",
-    ],
-    {
-      stdio: "inherit",
-      shell: true,
-    },
-  );
+  const launchCommands = buildLangGraphLaunchCommands();
+  let started = false;
+
+  for (const launch of launchCommands) {
+    try {
+      console.log(
+        `[proxy] starting internal LangGraph with: ${launch.command} ${launch.args.join(" ")}`,
+      );
+      langgraphProcess = spawn(launch.command, launch.args, {
+        stdio: "inherit",
+        shell: true,
+      });
+      started = true;
+      break;
+    } catch {
+      // Try next launch strategy.
+    }
+  }
+
+  if (!started || !langgraphProcess) {
+    throw new Error(
+      "Unable to start internal LangGraph server. Set SPAWN_LANGGRAPH_SERVER=false and provide LANGGRAPH_INTERNAL_URL, or ensure langgraphjs CLI is installed.",
+    );
+  }
 
   langgraphProcess.on("exit", (code, signal) => {
     console.log(
