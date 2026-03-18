@@ -2,8 +2,8 @@ FROM langchain/langgraphjs-api:20
 
 WORKDIR /deps/agent
 
-# Render builds from repo root; copy only the agent workspace for smaller, predictable context.
-ADD apps/agent /deps/agent
+# Render builds this service with apps/agent as context.
+ADD . /deps/agent
 
 # Remove monorepo-only workspace deps that are not published packages before npm install.
 RUN sed -i '/"@hexio\/eslint-config"/d;/"@hexio\/typescript-config"/d' package.json \
