@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run index.ts",
+    "dev": "langgraphjs dev --port ${PORT:-2024} --config ./langgraph.json",
+    "start": "langgraphjs dev --port ${PORT:-2024} --config ./langgraph.json",
     "dev:langgraph": "langgraphjs dev --port 2024 --config ./langgraph.json",
-    "dev:langgraph:internal": "langgraphjs dev --port 8123 --config ./langgraph.json",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
