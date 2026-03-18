@@ -35,6 +35,4 @@ npm-debug.log*
 .DS_Store
 *.pem
 
-hedera-agent-app
-
-agent-auth-payments
+ignore

@@ -6,6 +6,6 @@
   },
   "env": ".env",
   "http": {
-    "app": "./react-agent/proxy.ts:default"
+    "app": "./react-agent/proxy.ts:app"
   }
 }
