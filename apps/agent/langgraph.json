@@ -4,7 +4,8 @@
   "graphs": {
     "agent": "./react-agent/graph.ts:graph"
   },
-  "auth": {
-    "path": "./react-agent/security/auth.ts:auth"
+  "env": ".env",
+  "http": {
+    "app": "./react-agent/proxy.ts:default"
   }
 }
