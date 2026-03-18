@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "langgraphjs dev --port ${PORT:-2024} --config ./langgraph.json",
-    "start": "langgraphjs dev --port ${PORT:-2024} --config ./langgraph.json",
+    "dev": "langgraphjs dev --no-browser",
+    "start": "langgraphjs dev --no-browser",
     "dev:langgraph": "langgraphjs dev --port 2024 --config ./langgraph.json",
     "typecheck": "tsc --noEmit"
   },
