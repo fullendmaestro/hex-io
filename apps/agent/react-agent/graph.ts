@@ -1,14 +1,19 @@
 import { AIMessage } from "@langchain/core/messages";
 import { RunnableConfig } from "@langchain/core/runnables";
-import { MessagesAnnotation, StateGraph, Annotation } from "@langchain/langgraph";
+import {
+  MessagesAnnotation,
+  StateGraph,
+  Annotation,
+} from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 
 import { ConfigurationSchema, ensureConfiguration } from "./configuration.js";
-import { TOOLS } from "./tools.js";
+import { QUERY_TOOLS, TOOLS, isTransactionToolName } from "./tools.js";
 import { loadChatModel } from "./utils.js";
 
 const BOUND_TOOLS = TOOLS as any;
-const TOOLS_NODE = new ToolNode(BOUND_TOOLS) as any;
+const QUERY_TOOLS_NODE = new ToolNode(QUERY_TOOLS as any) as any;
+const TRANSACTION_TOOLS_NODE = new ToolNode(BOUND_TOOLS) as any;
 
 // Define the agent state extending MessagesAnnotation
 export const AgentState = Annotation.Root({
@@ -50,14 +55,18 @@ async function callModel(
 function routeModelOutput(state: typeof AgentState.State): string {
   const messages = state.messages;
   const lastMessage = messages[messages.length - 1];
-  // If the LLM is invoking tools, route there.
-  if ((lastMessage as AIMessage)?.tool_calls?.length || 0 > 0) {
-    return "tools";
+  const toolCalls = (lastMessage as AIMessage)?.tool_calls ?? [];
+
+  if (toolCalls.length > 0) {
+    const hasTransactionToolCall = toolCalls.some((toolCall) =>
+      isTransactionToolName(toolCall.name ?? ""),
+    );
+
+    return hasTransactionToolCall ? "transactionTools" : "queryTools";
   }
+
   // Otherwise end the graph.
-  else {
-    return "__end__";
-  }
+  return "__end__";
 }
 
 // Define a new graph. We use the prebuilt MessagesAnnotation to define state:
@@ -65,7 +74,8 @@ function routeModelOutput(state: typeof AgentState.State): string {
 const workflow = new StateGraph(AgentState, ConfigurationSchema)
   // Define the two nodes we will cycle between
   .addNode("callModel", callModel as any)
-  .addNode("tools", TOOLS_NODE)
+  .addNode("queryTools", QUERY_TOOLS_NODE)
+  .addNode("transactionTools", TRANSACTION_TOOLS_NODE)
   // Set the entrypoint as `callModel`
   // This means that this node is the first one called
   .addEdge("__start__", "callModel")
@@ -77,12 +87,13 @@ const workflow = new StateGraph(AgentState, ConfigurationSchema)
     // will be called after the source node is called.
     routeModelOutput,
   )
-  // This means that after `tools` is called, `callModel` node is called next.
-  .addEdge("tools", "callModel");
+  // This means that after tool execution, `callModel` node is called next.
+  .addEdge("queryTools", "callModel")
+  .addEdge("transactionTools", "callModel");
 
 // Finally, we compile it!
 // This compiles it into a graph you can invoke and deploy.
 export const graph = workflow.compile({
   interruptBefore: [],
-  interruptAfter: ["tools"],
+  interruptAfter: ["transactionTools"],
 });

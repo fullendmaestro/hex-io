@@ -1,7 +1,7 @@
 import { DefaultToolResultRenderer } from "./default-tool-result";
 import { TransactionToolCallRenderer } from "./transaction-tool-call-renderer";
 import { TransferHbarToolCallRenderer } from "./transfer-hbar-tool-call";
-import { TRANSACTION_TOOL_CONFIGS } from "./transaction-tool-config";
+import { HEDERA_TRANSACTION_TOOL_NAMES } from "./transaction-tool-config";
 import { ToolUIEntry } from "./types";
 
 // Transaction tools use a unified renderer — ToolCall handles the result too
@@ -20,8 +20,8 @@ const TRANSFER_HBAR_TOOL_UI: ToolUIEntry = {
 
 const TOOL_UI_BY_NAME: Record<string, ToolUIEntry> = {};
 
-// Register every transaction tool from the config map
-for (const toolName of Object.keys(TRANSACTION_TOOL_CONFIGS)) {
+// Register every Hedera transaction tool with the default transaction renderer
+for (const toolName of HEDERA_TRANSACTION_TOOL_NAMES) {
   TOOL_UI_BY_NAME[toolName] = TRANSACTION_TOOL_UI;
 }
 

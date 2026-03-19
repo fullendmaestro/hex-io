@@ -6,6 +6,7 @@
   },
   "env": ".env",
   "http": {
-    "app": "./react-agent/proxy.ts:app"
+    "app": "./react-agent/proxy.ts:app",
+    "disable_a2a": false
   }
 }

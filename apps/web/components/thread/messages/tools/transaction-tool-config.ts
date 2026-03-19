@@ -35,6 +35,46 @@ export type TransactionToolConfig = {
   argHidden?: string[];
 };
 
+export const HEDERA_TRANSACTION_TOOL_NAMES = [
+  "transfer_hbar_tool",
+  "approve_hbar_allowance_tool",
+  "delete_hbar_allowance_tool",
+  "delete_account_tool",
+  "update_account_tool",
+  "create_account_tool",
+  "sign_schedule_transaction_tool",
+  "schedule_delete_tool",
+  "approve_token_allowance_tool",
+  "transfer_hbar_with_allowance_tool",
+  "delete_token_allowance_tool",
+  "create_topic_tool",
+  "submit_topic_message_tool",
+  "delete_topic_tool",
+  "update_topic_tool",
+  "create_erc20_tool",
+  "transfer_erc20_tool",
+  "transfer_erc721_tool",
+  "mint_erc721_tool",
+  "create_erc721_tool",
+  "create_fungible_token_tool",
+  "mint_fungible_token_tool",
+  "create_non_fungible_token_tool",
+  "airdrop_fungible_token_tool",
+  "mint_non_fungible_token_tool",
+  "approve_nft_allowance_tool",
+  "delete_non_fungible_token_allowance_tool",
+  "update_token_tool",
+  "dissociate_token_tool",
+  "associate_token_tool",
+  "transfer_non_fungible_token_with_allowance_tool",
+  "transfer_non_fungible_token_tool",
+  "transfer_fungible_token_with_allowance_tool",
+] as const;
+
+const HEDERA_TRANSACTION_TOOL_NAME_SET = new Set<string>(
+  HEDERA_TRANSACTION_TOOL_NAMES,
+);
+
 // ── Accent color class maps ────────────────────────────────────────
 // Pre-define so Tailwind can purge correctly (no dynamic string concat)
 export const accentClasses: Record<
@@ -522,7 +562,7 @@ export const TRANSACTION_TOOL_CONFIGS: Record<string, TransactionToolConfig> = {
 
 /** Quick lookup: is this tool name registered as a transaction tool? */
 export function isTransactionTool(name: string): boolean {
-  return name in TRANSACTION_TOOL_CONFIGS;
+  return HEDERA_TRANSACTION_TOOL_NAME_SET.has(name);
 }
 
 /** Get config for a transaction tool, or undefined if not found */

@@ -12,6 +12,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@a2a-js/sdk": "^0.3.13",
+    "@a2ui/lit": "^0.8.3",
+    "@a2ui/react": "^0.8.0",
+    "@ag-ui/a2a": "^0.0.6",
     "@base-ui/react": "^1.2.0",
     "@hashgraph/hedera-wallet-connect": "^2.0.6",
     "@hashgraph/sdk": "^2.80.0",
