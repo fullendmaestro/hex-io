@@ -1,6 +1,11 @@
 import { parsePartialJson } from "@langchain/core/output_parsers";
 import { useStreamContext } from "@/providers/Stream";
-import { AIMessage, Checkpoint, Message, ToolMessage } from "@langchain/langgraph-sdk";
+import {
+  AIMessage,
+  Checkpoint,
+  Message,
+  ToolMessage,
+} from "@langchain/langgraph-sdk";
 import { getContentString } from "../utils";
 import { BranchSwitcher, CommandBar } from "./shared";
 import { MarkdownText } from "../markdown-text";
@@ -35,7 +40,8 @@ function CustomComponent({
       {customComponents.map((customComponent) => (
         <LoadExternalComponent
           key={customComponent.id}
-          stream={thread}
+          // react-ui expects the base useStream return shape; our typed stream is a compatible superset.
+          stream={thread as any}
           message={customComponent}
           meta={{ ui: customComponent }}
         />
@@ -71,9 +77,7 @@ function parseAnthropicStreamedToolCalls(
 /**
  * Build a map from tool_call_id → ToolMessage for pairing tool calls with results.
  */
-function buildToolResultsMap(
-  messages: Message[],
-): Record<string, ToolMessage> {
+function buildToolResultsMap(messages: Message[]): Record<string, ToolMessage> {
   const map: Record<string, ToolMessage> = {};
   for (const msg of messages) {
     if (msg.type === "tool" && "tool_call_id" in msg && msg.tool_call_id) {
@@ -133,7 +137,9 @@ export function AssistantMessage({
   // If so, the tool's own component handles the interrupt-resume flow,
   // so we suppress the generic interrupt view.
   const hasRegisteredToolUI = useMemo(() => {
-    const toolCalls = hasToolCalls ? message.tool_calls : anthropicStreamedToolCalls;
+    const toolCalls = hasToolCalls
+      ? message.tool_calls
+      : anthropicStreamedToolCalls;
     return toolCalls?.some((tc) => getToolUI(tc.name) !== null) ?? false;
   }, [hasToolCalls, message, anthropicStreamedToolCalls]);
 
@@ -156,12 +162,23 @@ export function AssistantMessage({
           {!hideToolCalls && (
             <>
               {(hasToolCalls && toolCallsHaveContents && (
-                <ToolCalls toolCalls={message.tool_calls} toolResults={toolResultsMap} />
+                <ToolCalls
+                  toolCalls={message.tool_calls}
+                  toolResults={toolResultsMap}
+                />
               )) ||
                 (hasAnthropicToolCalls && (
-                  <ToolCalls toolCalls={anthropicStreamedToolCalls} toolResults={toolResultsMap} />
+                  <ToolCalls
+                    toolCalls={anthropicStreamedToolCalls}
+                    toolResults={toolResultsMap}
+                  />
                 )) ||
-                (hasToolCalls && <ToolCalls toolCalls={message.tool_calls} toolResults={toolResultsMap} />)}
+                (hasToolCalls && (
+                  <ToolCalls
+                    toolCalls={message.tool_calls}
+                    toolResults={toolResultsMap}
+                  />
+                ))}
             </>
           )}
 
@@ -171,9 +188,9 @@ export function AssistantMessage({
               <ThreadView interrupt={threadInterrupt.value} />
             )}
           {threadInterrupt?.value &&
-            !isAgentInboxInterruptSchema(threadInterrupt.value) &&
-            !hasRegisteredToolUI &&
-            isLastMessage ? (
+          !isAgentInboxInterruptSchema(threadInterrupt.value) &&
+          !hasRegisteredToolUI &&
+          isLastMessage ? (
             <GenericInterruptView interrupt={threadInterrupt.value} />
           ) : null}
           <div

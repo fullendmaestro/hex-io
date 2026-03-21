@@ -1,6 +1,7 @@
 import { DefaultToolResultRenderer } from "./default-tool-result";
 import { TransactionToolCallRenderer } from "./transaction-tool-call-renderer";
 import { TransferHbarToolCallRenderer } from "./transfer-hbar-tool-call";
+import { SubAgentToolCallRenderer } from "./subagent-tool-call";
 import { HEDERA_TRANSACTION_TOOL_NAMES } from "./transaction-tool-config";
 import { ToolUIEntry } from "./types";
 
@@ -18,6 +19,13 @@ const TRANSFER_HBAR_TOOL_UI: ToolUIEntry = {
   isUnified: true,
 };
 
+// Remote A2A delegation uses a subagent-style indicator with input/output details
+const SUBAGENT_TOOL_UI: ToolUIEntry = {
+  ToolCall: SubAgentToolCallRenderer,
+  ToolResult: DefaultToolResultRenderer,
+  isUnified: true,
+};
+
 const TOOL_UI_BY_NAME: Record<string, ToolUIEntry> = {};
 
 // Register every Hedera transaction tool with the default transaction renderer
@@ -27,6 +35,7 @@ for (const toolName of HEDERA_TRANSACTION_TOOL_NAMES) {
 
 // Override: transfer_hbar_tool uses the dedicated component
 TOOL_UI_BY_NAME["transfer_hbar_tool"] = TRANSFER_HBAR_TOOL_UI;
+TOOL_UI_BY_NAME["ask_remote_agent_tool"] = SUBAGENT_TOOL_UI;
 
 /**
  * Returns the ToolUIEntry for a given tool name, or null if the tool
