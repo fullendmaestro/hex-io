@@ -2,11 +2,10 @@
   "node_version": "20",
   "dependencies": ["."],
   "graphs": {
-    "agent": "./react-agent/graph.ts:graph"
+    "agent": "./client-agent/graph.ts:graph"
   },
   "env": ".env",
   "http": {
-    "app": "./react-agent/proxy.ts:app",
-    "disable_a2a": false
+    "app": "./client-agent/app.ts:app"
   }
 }
