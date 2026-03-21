@@ -1,14 +1,14 @@
-FROM oven/bun:1.3.9
+FROM langchain/langgraphjs-api:20
 
-WORKDIR /app
+WORKDIR /deps/agent
 
-COPY . .
+# Render builds this service with apps/agent as context.
+ADD . /deps/agent
 
+# Remove monorepo-only workspace deps that are not published packages before npm install.
 RUN sed -i '/"@hexio\/eslint-config"/d;/"@hexio\/typescript-config"/d' package.json \
-  && bun install
+	&& npm install --legacy-peer-deps --no-audit --no-fund
 
-ENV PORT=10000
+ENV LANGSERVE_GRAPHS='{"agent":"./react-agent/graph.ts:graph"}'
 
-EXPOSE 10000
-
-CMD ["bun", "run", "start"]
+RUN (test ! -f /api/langgraph_api/js/build.mts && echo "Prebuild script not found, skipping") || tsx /api/langgraph_api/js/build.mts
