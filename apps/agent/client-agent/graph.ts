@@ -69,10 +69,25 @@ function routeModelOutput(state: typeof AgentState.State): string {
   return "__end__";
 }
 
+/**
+ * Process remote agent responses and prepare them for the model.
+ * This node handles responses from A2A delegated queries and formats them
+ * for the model to incorporate into the user-facing response.
+ */
+async function processRemoteAgentResponse(
+  state: typeof AgentState.State,
+  config: RunnableConfig,
+): Promise<typeof MessagesAnnotation.Update> {
+  // Remote agent responses come back through the query tools node
+  // and are automatically incorporated into the messages via the tool result.
+  // This node can be used for post-processing if needed in the future.
+  return {};
+}
+
 // Define a new graph. We use the prebuilt MessagesAnnotation to define state:
 // https://langchain-ai.github.io/langgraphjs/concepts/low_level/#messagesannotation
 const workflow = new StateGraph(AgentState, ConfigurationSchema)
-  // Define the two nodes we will cycle between
+  // Define the nodes we use for the agent loop
   .addNode("callModel", callModel as any)
   .addNode("queryTools", QUERY_TOOLS_NODE)
   .addNode("transactionTools", TRANSACTION_TOOLS_NODE)
@@ -87,7 +102,8 @@ const workflow = new StateGraph(AgentState, ConfigurationSchema)
     // will be called after the source node is called.
     routeModelOutput,
   )
-  // This means that after tool execution, `callModel` node is called next.
+  // Loop back to model after tool execution
+  // This allows the model to see tool results and decide on next steps
   .addEdge("queryTools", "callModel")
   .addEdge("transactionTools", "callModel");
 
