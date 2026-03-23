@@ -118,6 +118,8 @@ export function CommandBar({
   content,
   isHumanMessage,
   isAiMessage,
+  showCopyAction = true,
+  showRefreshAction = true,
   isEditing,
   setIsEditing,
   handleSubmitEdit,
@@ -127,6 +129,8 @@ export function CommandBar({
   content: string;
   isHumanMessage?: boolean;
   isAiMessage?: boolean;
+  showCopyAction?: boolean;
+  showRefreshAction?: boolean;
   isEditing?: boolean;
   setIsEditing?: React.Dispatch<React.SetStateAction<boolean>>;
   handleSubmitEdit?: () => void;
@@ -189,8 +193,10 @@ export function CommandBar({
 
   return (
     <div className="flex items-center gap-2">
-      <ContentCopyable content={content} disabled={isLoading} />
-      {isAiMessage && !!handleRegenerate && (
+      {showCopyAction && (
+        <ContentCopyable content={content} disabled={isLoading} />
+      )}
+      {showRefreshAction && isAiMessage && !!handleRegenerate && (
         <TooltipIconButton
           disabled={isLoading}
           tooltip="Refresh"

@@ -132,6 +132,8 @@ export function AssistantMessage({
     );
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
+  const hasDisplayedToolCalls =
+    !hideToolCalls && (hasToolCalls || hasAnthropicToolCalls);
 
   // Check if any tool call on this message has a registered UI renderer.
   // If so, the tool's own component handles the interrupt-resume flow,
@@ -209,6 +211,8 @@ export function AssistantMessage({
               content={contentString}
               isLoading={isLoading}
               isAiMessage={true}
+              showCopyAction={!hasDisplayedToolCalls}
+              showRefreshAction={!hasDisplayedToolCalls}
               handleRegenerate={() => handleRegenerate(parentCheckpoint)}
             />
           </div>
