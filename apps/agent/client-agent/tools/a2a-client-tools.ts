@@ -16,6 +16,35 @@ function partsToText(parts: Part[] | undefined): string {
     .trim();
 }
 
+function normalizeUrlCandidate(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+
+  try {
+    return new URL(value).origin;
+  } catch {
+    // Try assuming http when scheme is omitted (e.g. localhost:10003)
+  }
+
+  try {
+    return new URL(`http://${value}`).origin;
+  } catch {
+    return null;
+  }
+}
+
+function getConfiguredAgentAliasUrl(alias: string): string | null {
+  const normalizedAlias = alias.trim().toLowerCase();
+  const aliasMap: Record<string, string | undefined> = {
+    lumina: process.env.LUMINA_AGENT_URL,
+    neuralx: process.env.NEURALX_AGENT_URL,
+  };
+
+  const candidate = aliasMap[normalizedAlias];
+  if (!candidate) return null;
+  return normalizeUrlCandidate(candidate);
+}
+
 export class A2AClientToolProvider {
   private readonly discoveredAgents = new Map<string, AgentCard>();
   private readonly clientFactory = new ClientFactory();
@@ -31,9 +60,27 @@ export class A2AClientToolProvider {
       new DynamicStructuredTool({
         name: "a2a_discover_agent",
         description: "Discover an A2A agent and return its agent card by URL.",
-        schema: z.object({ url: z.string().url() }),
-        func: async (input) =>
-          this.discoverAgent((input as { url: string }).url),
+        schema: z.object({ url: z.string().min(1) }),
+        func: async (input) => {
+          const rawUrl = (input as { url: string }).url;
+          let resolvedUrl = getConfiguredAgentAliasUrl(rawUrl);
+
+          // If alias does not match, treat input as URL/host:port.
+          if (!resolvedUrl) {
+            resolvedUrl = normalizeUrlCandidate(rawUrl);
+          }
+
+          if (!resolvedUrl) {
+            return {
+              status: "error",
+              url: rawUrl,
+              error:
+                "Invalid agent URL/alias. Use lumina, neuralx, a full URL like http://localhost:10003, or host:port.",
+            };
+          }
+
+          return this.discoverAgent(resolvedUrl);
+        },
       }),
       new DynamicStructuredTool({
         name: "a2a_list_discovered_agents",
@@ -44,20 +91,62 @@ export class A2AClientToolProvider {
       new DynamicStructuredTool({
         name: "a2a_send_message",
         description:
-          "Send a message to a target A2A agent URL and return the response.",
+          "Send a message to a target A2A agent and return the response. Accepts full URL, host:port, or alias like lumina/neuralx.",
         schema: z.object({
           message_text: z.string().min(1),
-          target_agent_url: z.string().url(),
+          target_agent_url: z.string().min(1),
         }),
         func: async (input) => {
           const typed = input as {
             message_text: string;
             target_agent_url: string;
           };
-          return this.sendMessage(typed.message_text, typed.target_agent_url);
+          const resolvedTargetUrl = await this.resolveTargetAgentUrl(
+            typed.target_agent_url,
+          );
+          return this.sendMessage(typed.message_text, resolvedTargetUrl);
         },
       }),
     ];
+  }
+
+  private async resolveTargetAgentUrl(target: string): Promise<string> {
+    const normalizedTarget = target.trim().toLowerCase();
+    if (!normalizedTarget) {
+      throw new Error("target_agent_url is required.");
+    }
+
+    // Resolve configured aliases first (e.g. lumina -> LUMINA_AGENT_URL).
+    const aliasResolvedUrl = getConfiguredAgentAliasUrl(target);
+    if (aliasResolvedUrl) {
+      return aliasResolvedUrl;
+    }
+
+    // Fast path for direct URL / host:port inputs.
+    const directUrl = normalizeUrlCandidate(target);
+    if (directUrl) {
+      return directUrl;
+    }
+
+    await this.ensureKnownAgentsDiscovered();
+
+    // Match by discovered card name or discovered URL substring.
+    for (const [url, card] of this.discoveredAgents.entries()) {
+      const cardName = String(
+        (card as { name?: string }).name || "",
+      ).toLowerCase();
+      const discoveredUrl = url.toLowerCase();
+      if (
+        cardName.includes(normalizedTarget) ||
+        discoveredUrl.includes(normalizedTarget)
+      ) {
+        return url;
+      }
+    }
+
+    throw new Error(
+      `Could not resolve target agent '${target}'. Use a full URL (http://host:port), host:port, or alias like lumina.`,
+    );
   }
 
   private async getOrCreateClient(url: string) {

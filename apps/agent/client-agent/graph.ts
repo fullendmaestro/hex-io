@@ -10,122 +10,96 @@ import {
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 
 import { ConfigurationSchema, ensureConfiguration } from "./configuration.js";
-// import { QUERY_TOOLS, TOOLS, isTransactionToolName } from "./tools/index.js";
+import { QUERY_TOOLS, TOOLS, isTransactionToolName } from "./tools/index.js";
 import { loadChatModel } from "./utils.js";
 import { A2AClientToolProvider } from "./tools/a2a-client-tools.js";
+import { SYSTEM_PROMPT_TEMPLATE } from "./prompts.js";
+import { getTokenAccountIdTool } from "./tools/token-account-id-tool.js";
 
-// const BOUND_TOOLS = TOOLS as any;
-// const QUERY_TOOLS_NODE = new ToolNode(QUERY_TOOLS as any) as any;
-// const TRANSACTION_TOOLS_NODE = new ToolNode(BOUND_TOOLS) as any;
+const BOUND_TOOLS = TOOLS as any;
+const QUERY_TOOLS_NODE = new ToolNode(QUERY_TOOLS as any) as any;
+const TRANSACTION_TOOLS_NODE = new ToolNode(BOUND_TOOLS) as any;
 
-// // Define the agent state extending MessagesAnnotation
-// export const AgentState = Annotation.Root({
-//   ...MessagesAnnotation.spec,
-//   walletAccountId: Annotation<string>({
-//     reducer: (x, y) => y ?? x ?? "",
-//     default: () => "",
-//   }),
-// });
+// Define the agent state extending MessagesAnnotation
+export const AgentState = Annotation.Root({
+  ...MessagesAnnotation.spec,
+  walletAccountId: Annotation<string>({
+    reducer: (x, y) => y ?? x ?? "",
+    default: () => "",
+  }),
+});
 
-// // Define the function that calls the model
-// async function callModel(
-//   state: typeof AgentState.State,
-//   config: RunnableConfig,
-// ): Promise<typeof MessagesAnnotation.Update> {
-//   /** Call the LLM powering our agent. **/
-//   const configuration = ensureConfiguration(config);
+// Define the function that calls the model
+async function callModel(
+  state: typeof AgentState.State,
+  config: RunnableConfig,
+): Promise<typeof MessagesAnnotation.Update> {
+  /** Call the LLM powering our agent. **/
+  const configuration = ensureConfiguration(config);
 
-//   // Feel free to customize the prompt, model, and other logic!
-//   const model = (await loadChatModel(configuration.model)).bindTools(
-//     BOUND_TOOLS,
-//   );
+  // Feel free to customize the prompt, model, and other logic!
+  const model = (await loadChatModel(configuration.model)).bindTools(
+    BOUND_TOOLS,
+  );
 
-//   const response = await model.invoke([
-//     {
-//       role: "system",
-//       content: configuration.systemPromptTemplate
-//         .replace("{system_time}", new Date().toISOString())
-//         .replace("{wallet_account_id}", state.walletAccountId || "None"),
-//     },
-//     ...state.messages,
-//   ]);
+  const response = await model.invoke([
+    {
+      role: "system",
+      content: configuration.systemPromptTemplate
+        .replace("{system_time}", new Date().toISOString())
+        .replace("{wallet_account_id}", state.walletAccountId || "None"),
+    },
+    ...state.messages,
+  ]);
 
-//   // We return a list, because this will get added to the existing list
-//   return { messages: [response] };
-// }
+  // We return a list, because this will get added to the existing list
+  return { messages: [response] };
+}
 
-// // Define the function that determines whether to continue or not
-// function routeModelOutput(state: typeof AgentState.State): string {
-//   const messages = state.messages;
-//   const lastMessage = messages[messages.length - 1];
-//   const toolCalls = (lastMessage as AIMessage)?.tool_calls ?? [];
+// Define the function that determines whether to continue or not
+function routeModelOutput(state: typeof AgentState.State): string {
+  const messages = state.messages;
+  const lastMessage = messages[messages.length - 1];
+  const toolCalls = (lastMessage as AIMessage)?.tool_calls ?? [];
 
-//   if (toolCalls.length > 0) {
-//     const hasTransactionToolCall = toolCalls.some((toolCall) =>
-//       isTransactionToolName(toolCall.name ?? ""),
-//     );
+  if (toolCalls.length > 0) {
+    const hasTransactionToolCall = toolCalls.some((toolCall) =>
+      isTransactionToolName(toolCall.name ?? ""),
+    );
 
-//     return hasTransactionToolCall ? "transactionTools" : "queryTools";
-//   }
+    return hasTransactionToolCall ? "transactionTools" : "queryTools";
+  }
 
-//   // Otherwise end the graph.
-//   return "__end__";
-// }
+  // Otherwise end the graph.
+  return "__end__";
+}
 
-// /**
-//  * Process remote agent responses and prepare them for the model.
-//  * This node handles responses from A2A delegated queries and formats them
-//  * for the model to incorporate into the user-facing response.
-//  */
-// async function processRemoteAgentResponse(
-//   state: typeof AgentState.State,
-//   config: RunnableConfig,
-// ): Promise<typeof MessagesAnnotation.Update> {
-//   // Remote agent responses come back through the query tools node
-//   // and are automatically incorporated into the messages via the tool result.
-//   // This node can be used for post-processing if needed in the future.
-//   return {};
-// }
+// Define a new graph. We use the prebuilt MessagesAnnotation to define state:
+// https://langchain-ai.github.io/langgraphjs/concepts/low_level/#messagesannotation
+const workflow = new StateGraph(AgentState, ConfigurationSchema)
+  // Define the nodes we use for the agent loop
+  .addNode("callModel", callModel as any)
+  .addNode("queryTools", QUERY_TOOLS_NODE)
+  .addNode("transactionTools", TRANSACTION_TOOLS_NODE)
+  // Set the entrypoint as `callModel`
+  // This means that this node is the first one called
+  .addEdge("__start__", "callModel")
+  .addConditionalEdges(
+    // First, we define the edges' source node. We use `callModel`.
+    // This means these are the edges taken after the `callModel` node is called.
+    "callModel",
+    // Next, we pass in the function that will determine the sink node(s), which
+    // will be called after the source node is called.
+    routeModelOutput,
+  )
+  // Loop back to model after tool execution
+  // This allows the model to see tool results and decide on next steps
+  .addEdge("queryTools", "callModel")
+  .addEdge("transactionTools", "callModel");
 
-// // Define a new graph. We use the prebuilt MessagesAnnotation to define state:
-// // https://langchain-ai.github.io/langgraphjs/concepts/low_level/#messagesannotation
-// const workflow = new StateGraph(AgentState, ConfigurationSchema)
-//   // Define the nodes we use for the agent loop
-//   .addNode("callModel", callModel as any)
-//   .addNode("queryTools", QUERY_TOOLS_NODE)
-//   .addNode("transactionTools", TRANSACTION_TOOLS_NODE)
-//   // Set the entrypoint as `callModel`
-//   // This means that this node is the first one called
-//   .addEdge("__start__", "callModel")
-//   .addConditionalEdges(
-//     // First, we define the edges' source node. We use `callModel`.
-//     // This means these are the edges taken after the `callModel` node is called.
-//     "callModel",
-//     // Next, we pass in the function that will determine the sink node(s), which
-//     // will be called after the source node is called.
-//     routeModelOutput,
-//   )
-//   // Loop back to model after tool execution
-//   // This allows the model to see tool results and decide on next steps
-//   .addEdge("queryTools", "callModel")
-//   .addEdge("transactionTools", "callModel");
-
-// // Finally, we compile it!
-// // This compiles it into a graph you can invoke and deploy.
-// // export const graph = workflow.compile({
-// //   interruptBefore: [],
-// //   interruptAfter: ["transactionTools"],
-// // });
-
-const provider = new A2AClientToolProvider([
-  process.env.CURRENCY_AGENT_URL || "http://localhost:10000",
-  process.env.WEATHER_AGENT_URL || "http://localhost:20000",
-]);
-
-export const graph = createReactAgent({
-  name: "supervisor",
-  llm: await loadChatModel(process.env.AZURE_OPENAI_MODEL_NAME ?? "gpt-5-mini"),
-  tools: provider.tools as any,
-  prompt:
-    "You are a team supervisor managing a currency agent and a weather information agent. Discover available agents, then delegate user requests by calling a2a_send_message with the best target agent URL.",
+// Finally, we compile it!
+// This compiles it into a graph you can invoke and deploy.
+export const graph = workflow.compile({
+  interruptBefore: [],
+  interruptAfter: ["transactionTools"],
 });

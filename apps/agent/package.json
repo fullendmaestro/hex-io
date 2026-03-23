@@ -7,8 +7,8 @@
     "dev": "langgraphjs dev --no-browser --port 2024 --config ./langgraph.json",
     "start": "langgraphjs dev --no-browser",
     "dev:client-agent": "langgraphjs dev --no-browser",
-    "dev:lumina": "bun --watch ./lumina/index.ts",
-    "dev:neuralx": "bun --watch ./neuralx/index.ts",
+    "dev:lumina": "bun --env-file ./.env --watch ./lumina/index.ts",
+    "dev:neuralx": "bun --env-file ./.env --watch ./neuralx/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

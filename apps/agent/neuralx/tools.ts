@@ -1,4 +1,5 @@
 import { AccountId, Client } from "@hashgraph/sdk";
+import { saucerswapPlugin } from "hak-saucerswap-plugin";
 
 import {
   AgentMode,
@@ -12,7 +13,7 @@ export const hederaToolkit = new HederaLangchainToolkit({
     context: {
       mode: AgentMode.RETURN_BYTES,
     },
-    plugins: [],
+    plugins: [saucerswapPlugin],
   },
 });
 

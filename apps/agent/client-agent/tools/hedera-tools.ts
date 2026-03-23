@@ -17,6 +17,10 @@ import { v4 as uuidv4 } from "uuid";
 import { RemoteAgent } from "../agents-config.js";
 
 export const QUERY_TOOL_NAMES = [
+  "a2a_discover_agent",
+  "a2a_list_discovered_agents",
+  "a2a_send_message",
+  "get_token_account_id_tool",
   "ask_remote_agent_tool",
   "get_hbar_balance_query_tool",
   "get_account_query_tool",
@@ -31,6 +35,8 @@ export const QUERY_TOOL_NAMES = [
 ] as const;
 
 export const TRANSACTION_TOOL_NAMES = [
+  "execute_transaction_from_base64_tool",
+  "execute_remote_agent_transaction_tool",
   "transfer_hbar_tool",
   "approve_hbar_allowance_tool",
   "delete_hbar_allowance_tool",
@@ -114,7 +120,7 @@ export function isTransactionToolName(toolName: string): boolean {
   );
 }
 
-// export const QUERY_TOOLS: any[] = TOOLKIT_TOOLS.filter((tool) => {
-//   const name = getToolName(tool);
-//   return !!name && QUERY_TOOL_NAME_SET.has(name);
-// });
+export const QUERY_TOOLS: any[] = hederaToolkit.getTools().filter((tool) => {
+  const name = getToolName(tool);
+  return !!name && QUERY_TOOL_NAME_SET.has(name);
+});

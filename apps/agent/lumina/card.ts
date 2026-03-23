@@ -2,7 +2,7 @@ import { AgentCard } from "@a2a-js/sdk";
 
 export const luminaAgentCard: AgentCard = {
   protocolVersion: "0.3.0",
-  name: "Lumina DeFi Research Assistant (JS)",
+  name: "Lumina DeFi Research Assistant",
   description:
     "A DeFi research assistant for protocol analysis, risk review, and market context.",
   url: "http://localhost:10003/",
