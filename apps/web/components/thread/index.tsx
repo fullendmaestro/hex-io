@@ -24,8 +24,6 @@ import { AgentSidebar } from "./agent-sidebar";
 import { ThreadWelcome } from "./thread-welcome";
 import { ThreadInput } from "./thread-input";
 
-
-
 export function Thread() {
   const threadId = useAppSelector(selectThreadId);
   const walletAccountId = useAppSelector(selectWalletAccountId);
@@ -130,6 +128,9 @@ export function Thread() {
   const hasNoAIOrToolMessages = !messages.find(
     (m) => m.type === "ai" || m.type === "tool",
   );
+  const renderMessages = messages.filter(
+    (m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX),
+  );
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -138,69 +139,69 @@ export function Thread() {
         <SidebarProvider defaultOpen={false}>
           <SidebarInset>
             <div className="flex flex-col min-w-0 h-dvh bg-background">
-          <ThreadHeader chatStarted={chatStarted} />
+              <ThreadHeader chatStarted={chatStarted} />
 
-          <StickToBottom className="relative flex-1 overflow-hidden">
-            <StickyToBottomContent
-              className={cn(
-                "absolute px-4 inset-0 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
-                !chatStarted && "flex flex-col items-stretch mt-[25vh]",
-                chatStarted && "grid grid-rows-[1fr_auto]",
-              )}
-              contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
-              content={
-                <>
-                  {messages
-                    .filter((m) => !m.id?.startsWith(DO_NOT_RENDER_ID_PREFIX))
-                    .map((message, index) =>
-                      message.type === "human" ? (
-                        <HumanMessage
-                          key={message.id || `${message.type}-${index}`}
-                          message={message}
-                          isLoading={isLoading}
-                        />
-                      ) : (
+              <StickToBottom className="relative flex-1 overflow-hidden">
+                <StickyToBottomContent
+                  className={cn(
+                    "absolute px-4 inset-0 overflow-y-scroll [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-transparent",
+                    !chatStarted && "flex flex-col items-stretch mt-[25vh]",
+                    chatStarted && "grid grid-rows-[1fr_auto]",
+                  )}
+                  contentClassName="pt-8 pb-16  max-w-3xl mx-auto flex flex-col gap-4 w-full"
+                  content={
+                    <>
+                      {renderMessages.map((message, index) =>
+                        message.type === "human" ? (
+                          <HumanMessage
+                            key={message.id || `${message.type}-${index}`}
+                            message={message}
+                            isLoading={isLoading}
+                          />
+                        ) : (
+                          <AssistantMessage
+                            key={message.id || `${message.type}-${index}`}
+                            message={message}
+                            messages={renderMessages}
+                            messageIndex={index}
+                            isLoading={isLoading}
+                            handleRegenerate={handleRegenerate}
+                          />
+                        ),
+                      )}
+                      {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
+                    We need to render it outside of the messages list, since there are no messages to render */}
+                      {hasNoAIOrToolMessages && !!stream.interrupt && (
                         <AssistantMessage
-                          key={message.id || `${message.type}-${index}`}
-                          message={message}
+                          key="interrupt-msg"
+                          message={undefined}
                           isLoading={isLoading}
                           handleRegenerate={handleRegenerate}
                         />
-                      ),
-                    )}
-                  {/* Special rendering case where there are no AI/tool messages, but there is an interrupt.
-                    We need to render it outside of the messages list, since there are no messages to render */}
-                  {hasNoAIOrToolMessages && !!stream.interrupt && (
-                    <AssistantMessage
-                      key="interrupt-msg"
-                      message={undefined}
-                      isLoading={isLoading}
-                      handleRegenerate={handleRegenerate}
-                    />
-                  )}
-                  {isLoading && !firstTokenReceived && (
-                    <AssistantMessageLoading />
-                  )}
-                </>
-              }
-              footer={
-                <div className="sticky flex flex-col w-full gap-8 bottom-0">
-                  {!chatStarted && <ThreadWelcome />}
+                      )}
+                      {isLoading && !firstTokenReceived && (
+                        <AssistantMessageLoading />
+                      )}
+                    </>
+                  }
+                  footer={
+                    <div className="sticky flex flex-col w-full gap-8 bottom-0">
+                      {!chatStarted && <ThreadWelcome />}
 
-                  <ScrollToBottom className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 animate-in fade-in-0 zoom-in-95" />
+                      <ScrollToBottom className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 animate-in fade-in-0 zoom-in-95" />
 
-                  <ThreadInput
-                    input={input}
-                    setInput={setInput}
-                    handleSubmit={handleSubmit}
-                    isLoading={isLoading}
-                    stopStream={() => stream.stop()}
-                  />
-                </div>
-              }
-            />
-          </StickToBottom>
-        </div>
+                      <ThreadInput
+                        input={input}
+                        setInput={setInput}
+                        handleSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        stopStream={() => stream.stop()}
+                      />
+                    </div>
+                  }
+                />
+              </StickToBottom>
+            </div>
           </SidebarInset>
           <AgentSidebar />
         </SidebarProvider>

@@ -74,6 +74,86 @@ function parseAnthropicStreamedToolCalls(
   });
 }
 
+function getMessageToolCalls(
+  message: Message | undefined,
+): AIMessage["tool_calls"] {
+  if (!message || message.type !== "ai") return undefined;
+
+  const directToolCalls =
+    "tool_calls" in message
+      ? (message.tool_calls as AIMessage["tool_calls"])
+      : undefined;
+  if (directToolCalls?.length) return directToolCalls;
+
+  if (Array.isArray(message.content)) {
+    const streamedToolCalls =
+      parseAnthropicStreamedToolCalls(
+        message.content as MessageContentComplex[],
+      ) ?? [];
+    if (streamedToolCalls.length) return streamedToolCalls;
+  }
+
+  return undefined;
+}
+
+function isToolOnlyAiMessage(message: Message | undefined): boolean {
+  if (!message || message.type !== "ai") return false;
+  if (getContentString(message.content ?? []).length > 0) return false;
+  return !!getMessageToolCalls(message)?.length;
+}
+
+function hasPriorToolOnlyAiInRun(
+  messages: Message[],
+  messageIndex: number,
+): boolean {
+  for (let idx = messageIndex - 1; idx >= 0; idx -= 1) {
+    const candidate = messages[idx];
+    if (!candidate) continue;
+
+    if (candidate.type === "human") return false;
+
+    if (candidate.type === "ai") {
+      if (getContentString(candidate.content ?? []).length > 0) return false;
+      return isToolOnlyAiMessage(candidate);
+    }
+  }
+
+  return false;
+}
+
+function collectToolCallsInRun(
+  messages: Message[],
+  messageIndex: number,
+): AIMessage["tool_calls"] {
+  const combined: NonNullable<AIMessage["tool_calls"]> = [];
+
+  const currentToolCalls = getMessageToolCalls(messages[messageIndex]);
+  if (currentToolCalls?.length) {
+    combined.push(...currentToolCalls);
+  }
+
+  for (let idx = messageIndex + 1; idx < messages.length; idx += 1) {
+    const candidate = messages[idx];
+    if (!candidate) continue;
+
+    if (candidate.type === "human") break;
+
+    if (candidate.type === "ai") {
+      if (getContentString(candidate.content ?? []).length > 0) break;
+
+      const candidateToolCalls = getMessageToolCalls(candidate);
+      if (candidateToolCalls?.length) {
+        combined.push(...candidateToolCalls);
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  return combined;
+}
+
 /**
  * Build a map from tool_call_id → ToolMessage for pairing tool calls with results.
  */
@@ -89,10 +169,14 @@ function buildToolResultsMap(messages: Message[]): Record<string, ToolMessage> {
 
 export function AssistantMessage({
   message,
+  messages,
+  messageIndex,
   isLoading,
   handleRegenerate,
 }: {
   message: Message | undefined;
+  messages?: Message[];
+  messageIndex?: number;
   isLoading: boolean;
   handleRegenerate: (parentCheckpoint: Checkpoint | null | undefined) => void;
 }) {
@@ -116,36 +200,49 @@ export function AssistantMessage({
   );
 
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;
-  const anthropicStreamedToolCalls = Array.isArray(content)
-    ? parseAnthropicStreamedToolCalls(content)
-    : undefined;
-
-  const hasToolCalls =
-    message &&
-    "tool_calls" in message &&
-    message.tool_calls &&
-    message.tool_calls.length > 0;
+  const messageToolCalls = getMessageToolCalls(message);
+  const hasToolCalls = !!messageToolCalls?.length;
   const toolCallsHaveContents =
     hasToolCalls &&
-    message.tool_calls?.some(
-      (tc) => tc.args && Object.keys(tc.args).length > 0,
-    );
-  const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
+    messageToolCalls?.some((tc) => tc.args && Object.keys(tc.args).length > 0);
   const isToolResult = message?.type === "tool";
+
+  const shouldMergeWithPreviousToolRun = useMemo(() => {
+    if (!messages || messageIndex == null) return false;
+    if (!isToolOnlyAiMessage(message)) return false;
+    return hasPriorToolOnlyAiInRun(messages, messageIndex);
+  }, [message, messageIndex, messages]);
+
+  const groupedToolCalls = useMemo(() => {
+    if (!messages || messageIndex == null) return messageToolCalls;
+    if (!isToolOnlyAiMessage(message)) return messageToolCalls;
+    return collectToolCallsInRun(messages, messageIndex);
+  }, [message, messageIndex, messageToolCalls, messages]);
+
   const hasDisplayedToolCalls =
-    !hideToolCalls && (hasToolCalls || hasAnthropicToolCalls);
+    !hideToolCalls &&
+    !shouldMergeWithPreviousToolRun &&
+    !!groupedToolCalls?.length;
 
   // Check if any tool call on this message has a registered UI renderer.
   // If so, the tool's own component handles the interrupt-resume flow,
   // so we suppress the generic interrupt view.
   const hasRegisteredToolUI = useMemo(() => {
-    const toolCalls = hasToolCalls
-      ? message.tool_calls
-      : anthropicStreamedToolCalls;
+    const toolCalls = groupedToolCalls;
     return toolCalls?.some((tc) => getToolUI(tc.name) !== null) ?? false;
-  }, [hasToolCalls, message, anthropicStreamedToolCalls]);
+  }, [groupedToolCalls]);
 
   if (isToolResult && hideToolCalls) {
+    return null;
+  }
+
+  // Consecutive tool-only AI messages are merged into the first "Working" block.
+  if (
+    !hideToolCalls &&
+    !isToolResult &&
+    shouldMergeWithPreviousToolRun &&
+    contentString.length === 0
+  ) {
     return null;
   }
 
@@ -165,19 +262,13 @@ export function AssistantMessage({
             <>
               {(hasToolCalls && toolCallsHaveContents && (
                 <ToolCalls
-                  toolCalls={message.tool_calls}
+                  toolCalls={groupedToolCalls}
                   toolResults={toolResultsMap}
                 />
               )) ||
-                (hasAnthropicToolCalls && (
-                  <ToolCalls
-                    toolCalls={anthropicStreamedToolCalls}
-                    toolResults={toolResultsMap}
-                  />
-                )) ||
                 (hasToolCalls && (
                   <ToolCalls
-                    toolCalls={message.tool_calls}
+                    toolCalls={groupedToolCalls}
                     toolResults={toolResultsMap}
                   />
                 ))}
@@ -224,11 +315,11 @@ export function AssistantMessage({
 
 export function AssistantMessageLoading() {
   return (
-    <div className="flex items-start mr-auto gap-2">
-      <div className="flex items-center gap-1 rounded-2xl bg-muted px-4 py-2 h-8">
-        <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-[pulse_1.5s_ease-in-out_infinite]"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-[pulse_1.5s_ease-in-out_0.5s_infinite]"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-[pulse_1.5s_ease-in-out_1s_infinite]"></div>
+    <div className="flex items-start mr-auto gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex items-center gap-1">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground animate-[pulse_1.4s_ease-in-out_infinite]"></span>
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground animate-[pulse_1.4s_ease-in-out_0.2s_infinite]"></span>
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground animate-[pulse_1.4s_ease-in-out_0.4s_infinite]"></span>
       </div>
     </div>
   );

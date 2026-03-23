@@ -1,5 +1,5 @@
 import { AIMessage, ToolMessage } from "@langchain/langgraph-sdk";
-import { getToolUI } from "./tools/registry";
+import { CLIENT_AGENT_TOOL_TITLE_BY_NAME, getToolUI } from "./tools/registry";
 import {
   ChainOfTool,
   ChainOfToolContent,
@@ -11,11 +11,7 @@ import type { ToolUIEntry } from "./tools/types";
 
 type ToolResponseState = "pending" | "success" | "error";
 
-const TOOL_CALL_NAME_TO_CHAIN_OF_TOOL_TITLE: Record<string, string> = {
-  ask_remote_agent_tool: "Delegating To Remote Agent",
-  execute_transaction_from_base64_tool: "Executing Transaction",
-  transfer_hbar_tool: "Transferring HBAR",
-};
+const TOOL_CALL_NAME_TO_CHAIN_OF_TOOL_TITLE = CLIENT_AGENT_TOOL_TITLE_BY_NAME;
 
 const TOOL_RESPONSE_STATE_TO_CHAIN_OF_TOOL_STEP_STATUS: Record<
   ToolResponseState,
@@ -28,13 +24,13 @@ const TOOL_RESPONSE_STATE_TO_CHAIN_OF_TOOL_STEP_STATUS: Record<
 
 const TOOL_CALL_NAME_TO_CHAIN_OF_TOOL_COMPONENT: Partial<
   Record<string, ToolUIEntry["ToolCall"]>
-> = {
-  ask_remote_agent_tool: getToolUI("ask_remote_agent_tool")?.ToolCall,
-  execute_transaction_from_base64_tool: getToolUI(
-    "execute_transaction_from_base64_tool",
-  )?.ToolCall,
-  transfer_hbar_tool: getToolUI("transfer_hbar_tool")?.ToolCall,
-};
+> = Object.fromEntries(
+  Object.keys(TOOL_CALL_NAME_TO_CHAIN_OF_TOOL_TITLE)
+    .map((toolName) => [toolName, getToolUI(toolName)?.ToolCall] as const)
+    .filter((entry): entry is readonly [string, ToolUIEntry["ToolCall"]] =>
+      Boolean(entry[1]),
+    ),
+);
 
 function toToolTitle(toolName: string): string {
   if (TOOL_CALL_NAME_TO_CHAIN_OF_TOOL_TITLE[toolName]) {

@@ -72,7 +72,7 @@ export function HumanMessage({
   return (
     <div
       className={cn(
-        "flex items-center ml-auto gap-2 group",
+        "flex items-center ml-auto gap-2 group animate-in fade-in slide-in-from-bottom-2 duration-300",
         isEditing && "w-full max-w-xl",
       )}
     >
@@ -84,7 +84,7 @@ export function HumanMessage({
             onSubmit={handleSubmitEdit}
           />
         ) : (
-          <p className="px-4 py-2 rounded-3xl bg-muted w-fit ml-auto whitespace-pre-wrap">
+          <p className="rounded-2xl px-3 py-2 max-w-[80%] bg-primary text-primary-foreground text-[15px] leading-[1.75] whitespace-pre-wrap wrap-break-word w-fit ml-auto">
             {contentString}
           </p>
         )}

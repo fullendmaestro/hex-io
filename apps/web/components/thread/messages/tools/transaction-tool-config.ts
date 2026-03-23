@@ -37,6 +37,7 @@ export type TransactionToolConfig = {
 
 export const HEDERA_TRANSACTION_TOOL_NAMES = [
   "execute_transaction_from_base64_tool",
+  "execute_remote_agent_transaction_tool",
   "transfer_hbar_tool",
   "approve_hbar_allowance_tool",
   "delete_hbar_allowance_tool",
