@@ -115,11 +115,7 @@ export function TransactionToolCallCard({
           </tbody>
         </table>
       </div>
-    ) : (
-      <div className={`px-4 py-3 text-xs ${colors.textMuted}`}>
-        No parameters provided
-      </div>
-    );
+    ) : null;
 
   // Inline mode: just the args table (used inside unified renderer)
   if (isInline) {

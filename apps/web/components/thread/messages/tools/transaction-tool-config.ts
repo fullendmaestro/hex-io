@@ -36,6 +36,7 @@ export type TransactionToolConfig = {
 };
 
 export const HEDERA_TRANSACTION_TOOL_NAMES = [
+  "execute_transaction_from_base64_tool",
   "transfer_hbar_tool",
   "approve_hbar_allowance_tool",
   "delete_hbar_allowance_tool",
@@ -150,6 +151,22 @@ const SCHEDULING_HIDDEN = ["schedulingParams"];
 
 // ── Tool configs ───────────────────────────────────────────────────
 export const TRANSACTION_TOOL_CONFIGS: Record<string, TransactionToolConfig> = {
+  execute_transaction_from_base64_tool: {
+    label: "Execute Transaction",
+    category: "Remote Agent",
+    accent: "slate",
+    icon: Stamp,
+    argPriority: [],
+    argLabels: {},
+    argHidden: [
+      "serializedTransactionBase64",
+      "bytes",
+      "bytesBase64",
+      "serializedTransaction",
+      "schedulingParams",
+    ],
+  },
+
   // ─ HBAR ─
   transfer_hbar_tool: {
     label: "Transfer HBAR",

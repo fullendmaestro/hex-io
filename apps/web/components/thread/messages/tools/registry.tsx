@@ -1,6 +1,7 @@
 import { DefaultToolResultRenderer } from "./default-tool-result";
 import { TransactionToolCallRenderer } from "./transaction-tool-call-renderer";
 import { TransferHbarToolCallRenderer } from "./transfer-hbar-tool-call";
+import { ExecuteTransactionToolCallRenderer } from "./execute-transaction-tool-call";
 import { SubAgentToolCallRenderer } from "./subagent-tool-call";
 import { HEDERA_TRANSACTION_TOOL_NAMES } from "./transaction-tool-config";
 import { ToolUIEntry } from "./types";
@@ -15,6 +16,13 @@ const TRANSACTION_TOOL_UI: ToolUIEntry = {
 // Transfer HBAR gets a dedicated, polished renderer
 const TRANSFER_HBAR_TOOL_UI: ToolUIEntry = {
   ToolCall: TransferHbarToolCallRenderer,
+  ToolResult: DefaultToolResultRenderer,
+  isUnified: true,
+};
+
+// Execute Transaction from base64 uses minimal inline renderer
+const EXECUTE_TRANSACTION_TOOL_UI: ToolUIEntry = {
+  ToolCall: ExecuteTransactionToolCallRenderer,
   ToolResult: DefaultToolResultRenderer,
   isUnified: true,
 };
@@ -35,6 +43,8 @@ for (const toolName of HEDERA_TRANSACTION_TOOL_NAMES) {
 
 // Override: transfer_hbar_tool uses the dedicated component
 TOOL_UI_BY_NAME["transfer_hbar_tool"] = TRANSFER_HBAR_TOOL_UI;
+TOOL_UI_BY_NAME["execute_transaction_from_base64_tool"] =
+  EXECUTE_TRANSACTION_TOOL_UI;
 TOOL_UI_BY_NAME["ask_remote_agent_tool"] = SUBAGENT_TOOL_UI;
 
 /**
