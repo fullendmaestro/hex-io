@@ -1,5 +1,5 @@
-import { initChatModel } from "langchain/chat_models/universal";
 import { ChatOllama } from "@langchain/ollama";
+import { initChatModel } from "langchain/chat_models/universal";
 
 export async function loadChatModel(modelName?: string) {
   if (process.env.LLM_PROVIDER === "ollama") {
@@ -34,7 +34,7 @@ export async function loadChatModel(modelName?: string) {
 
   if (!process.env.OPENAI_API_KEY) {
     throw new Error(
-      "Missing model credentials. Configure OPENAI_API_KEY, or Azure OpenAI env vars, or LLM_PROVIDER=ollama.",
+      "Missing model credentials. Configure OPENAI_API_KEY, Azure OpenAI env vars, or LLM_PROVIDER=ollama.",
     );
   }
 

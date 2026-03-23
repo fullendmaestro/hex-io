@@ -13,13 +13,17 @@ import { A2AExpressApp } from "@a2a-js/sdk/server/express";
 import { loadChatModel } from "../common/model.js";
 import { LangGraphAgentAdapter } from "../common/adapter.js";
 import { LangGraphAgentExecutor } from "../common/agent-executor.js";
-import { luminaAgentCard } from "./card.js";
+import { neuralxAgentCard } from "./card.js";
 import { TOOLS } from "./tools.js";
 import { SYSTEM_PROMPT_TEMPLATE } from "./prompts.js";
 
-async function creatLuminaAgent() {
+function getWeather(cityName: string): string {
+  return `${cityName} is Sunny`;
+}
+
+async function createWeatherAgent() {
   return createReactAgent({
-    name: "lumina",
+    name: "neuralx",
     llm: await loadChatModel(
       process.env.AZURE_OPENAI_MODEL_NAME ?? "gpt-5-mini",
     ),
@@ -30,15 +34,15 @@ async function creatLuminaAgent() {
 
 async function main() {
   const host = "localhost";
-  const port = process.env.LUMINA_AGENT_PORT || 10003;
+  const port = Number(process.env.NEURALX_AGENT_PORT || 10004);
 
-  const agentGraph = await creatLuminaAgent();
+  const agentGraph = await createWeatherAgent();
   const adapter = new LangGraphAgentAdapter(agentGraph as any);
   const agentExecutor: AgentExecutor = new LangGraphAgentExecutor(adapter);
 
   const taskStore: TaskStore = new InMemoryTaskStore();
   const requestHandler = new DefaultRequestHandler(
-    luminaAgentCard,
+    neuralxAgentCard,
     taskStore,
     agentExecutor,
   );
@@ -46,9 +50,9 @@ async function main() {
   const expressApp = appBuilder.setupRoutes(express() as any);
 
   expressApp.listen(port, () => {
-    console.log(`[LuminaAgent] Server started on http://${host}:${port}`);
+    console.log(`[NeuralX] Server started on http://${host}:${port}`);
     console.log(
-      `[LuminaAgent] Agent Card: http://${host}:${port}/.well-known/agent-card.json`,
+      `[NeuralX] Agent Card: http://${host}:${port}/.well-known/agent-card.json`,
     );
   });
 }
